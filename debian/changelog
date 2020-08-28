@@ -1,0 +1,647 @@
+eds-backend-telepathy (0.4.62-1+0m5) unstable; urgency=low
+
+  * This entry has been added by BIFH queue processor
+    Suffix +0m5 added to package revision
+
+ -- Mahawadhi Ratna <ext-ratna.2.mahawadhi@nokia.com>  Fri, 12 Feb 2010 12:06:04 +0200
+
+eds-backend-telepathy (0.4.62-1) unstable; urgency=low
+
+  * Add a magical ID to allow the removal of a master UID without removing the
+    contact (see NB#136941)
+  * Add a magical ID to allow the removal of a contact only if there are no
+    master UIDs (see NB#136941)
+  * Remember the known non-normalized IDs of contacts (see NB#136941)
+  * Make the address book work when the user adds a contact with a
+    non-normalized user name while offline (see NB#136941)
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Tue, 09 Feb 2010 15:35:46 +0000
+
+eds-backend-telepathy (0.4.61-1) unstable; urgency=low
+
+  * Revert all the changes in 0.4.60 to ease the integration of libosso-abook
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Fri, 29 Jan 2010 12:07:36 +0000
+
+eds-backend-telepathy (0.4.60-1) unstable; urgency=low
+
+  * Add a magical ID to allow the removal of a master UID without removing the
+    contact (see NB#136941)
+  * Add a magical ID to allow the removal of a contact only if there are no
+    master UIDs (see NB#136941)
+  * Remember the known non-normalized IDs of contacts (see NB#136941)
+  * Make the address book work when the user adds a contact with a
+    non-normalized user name while offline (see NB#136941)
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Thu, 28 Jan 2010 15:13:56 +0000
+
+eds-backend-telepathy (0.4.59-1) unstable; urgency=low
+
+  * Fixes: NB#145196 - Only contacts on the "subscribe" list should show up in
+    the contact list, not "publish"
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Wed, 30 Dec 2009 19:27:33 +0100
+
+eds-backend-telepathy (0.4.58-1) unstable; urgency=low
+
+  * Reset the capabilities of contacts when the account goes offline
+  * Fixes: NB#149806 - Provide caps to make video calls
+  * Make the capabilities work from the beginning and not only after getting a
+    presence update
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Thu, 10 Dec 2009 11:58:36 +0000
+
+eds-backend-telepathy (0.4.57-1) unstable; urgency=low
+
+  * Fixes: NB#147035 - Sometimes gtalk contact avatars not synced if contact
+    is offline
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Thu, 26 Nov 2009 14:35:22 +0000
+
+eds-backend-telepathy (0.4.56-1) unstable; urgency=low
+
+  * Fixes: NB#142640 - e-addressbook crash observed and lost few of the server
+    contacts
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Tue, 27 Oct 2009 13:15:24 +0000
+
+eds-backend-telepathy (0.4.55-1) unstable; urgency=low
+
+  * Fixes: NB#142640 - e-addressbook crash observed and lost few of the server
+    contacts
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Tue, 27 Oct 2009 13:15:24 +0000
+
+eds-backend-telepathy (0.4.54-1) unstable; urgency=low
+
+  * Revert the fix for NB#142640 as it was wrong
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Fri, 23 Oct 2009 17:41:14 +0100
+
+eds-backend-telepathy (0.4.53-1) unstable; urgency=low
+
+  * Fixes: NB#142640 - e-addressbook crash observed and lost few of the server
+    contacts
+  * Remove the backup scripts, backup is now handle by osso-addressbook (see
+    NB#138107)
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Tue, 20 Oct 2009 13:38:50 +0100
+
+eds-backend-telepathy (0.4.52-1) unstable; urgency=low
+
+  * Fixes: NB#137829 - Do not timeout when requesting channel to avoid
+    generating unmerged contacts
+  * Fixes: NB#138116 - USE-TIME F-CONTACTS: Activity of addressbook when
+    contact changes presence:SINGLE:3G
+  * Flush pending changes before writing new ones to the DB
+  * Do not write changes to the DB in a timeout handler to avoid useless wake
+    ups
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Wed, 14 Oct 2009 17:09:34 +0100
+
+eds-backend-telepathy (0.4.51-1) unstable; urgency=low
+
+  * Fixes: NB#141520 - eds-backend-tp has empty COPYING
+  * Update the README file as it was outdated
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Fri, 02 Oct 2009 13:26:34 +0100
+
+eds-backend-telepathy (0.4.50-1) unstable; urgency=low
+
+  * Fixes: NB#137270 - Contacts unmerged after restore
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Mon, 14 Sep 2009 10:03:38 +0100
+
+eds-backend-telepathy (0.4.49-1) unstable; urgency=low
+
+  * Fixes: NB#133547 - eds-backend-telepathy subscribed to D-Bus signal
+    NameOwnerChanged
+  * Emit a critical warning if the unsupported modify_contact method is called
+  * Removed some old and commented out code
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Tue, 18 Aug 2009 16:33:23 +0100
+
+eds-backend-telepathy (0.4.48-1) unstable; urgency=low
+
+  * Fixes: NB#132302 - Corematic: tp_connection_ready_cb (error=0x0) at
+    e-book-backend-tp-cl.c:1290
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Fri, 14 Aug 2009 13:24:55 +0100
+
+eds-backend-telepathy (0.4.47-1) unstable; urgency=low
+
+  * Fix warnings reported by the build bot.
+  * Fixes: NB#87450 - Backup restore scripts are run even when they shouldn't
+  * Fixes: NB#121629 - Restore makes duplicates of GTalk-contacts
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Thu, 13 Aug 2009 11:19:56 +0100
+
+eds-backend-telepathy (0.4.46-1) unstable; urgency=low
+
+  * Fixes: NB#130294 - e-addressbook-factory crashes and loses IM accounts
+    when calling busy phone
+
+ -- Mathias Hasselmann <mathias.hasselmann@maemo.org>  Wed, 05 Aug 2009 01:08:43 +0200
+
+eds-backend-telepathy (0.4.45-1) unstable; urgency=low
+
+  * Fixes: NB#130903 - 500 bytes per contact leaked when configuring new chat
+    accounts
+
+ -- Mathias Hasselmann <mathias.hasselmann@maemo.org>  Mon, 03 Aug 2009 16:56:30 +0200
+
+eds-backend-telepathy (0.4.44-1) unstable; urgency=low
+
+  * Partial fix for NB#120573 - Duplicate contact created if delete the Gtalk
+    field of an IM contact
+  * Fixes: NB#121629 - Restore makes duplicates of GTalk-contacts
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Mon, 27 Jul 2009 20:14:03 +0100
+
+eds-backend-telepathy (0.4.43-1) unstable; urgency=low
+
+  * Fixes: NB#126527 - <Coverity> FORWARD_NULL checker
+  * Fixes: NB#128594 - Corematic: crash in get_next_channel_members at
+    e-book-backend-tp-cl.c:1979
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Wed, 22 Jul 2009 19:02:15 +0100
+
+eds-backend-telepathy (0.4.42-1) unstable; urgency=low
+
+  * Fixes: NB#126210 - Invalid IM contacts when deleted are again shown on
+    reopening application
+  * Fixes: NB#128484 - Contacts deleted when offline reappear after restarting
+    the addressbook
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Wed, 22 Jul 2009 11:40:51 +0100
+
+eds-backend-telepathy (0.4.41-1) unstable; urgency=low
+
+  * Fixes: NB#128477 - IM contacts not saved correctly
+  * Fixes: NB#121629 - Restore makes duplicates of GTalk-contacts
+
+ -- Marco Barisione <marco.barisione@collabora.co.uk>  Fri, 17 Jul 2009 16:42:33 +0100
+
+eds-backend-telepathy (0.4.40-1) unstable; urgency=low
+
+  * Fixes: NB#128483 - Notify the view of local removal of IM contacts
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Fri, 17 Jul 2009 16:00:40 +0100
+
+eds-backend-telepathy (0.4.39-1) unstable; urgency=low
+
+  * Fixes: NB#112321 - Blocking and unblocking the contacts not working in
+    mentioned senario
+  * Fixes: NB#121632 - Error banner observed when creating a new contact with
+    existing IM id
+  * Fixes: NB#121647 - Moving the last and first name from nick name field of
+    IM contact to separate fields removes the name totally in GTalk
+  * Fixes: NB#115549 - Very rare crash in eds-backend-telepathy
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 02 Jul 2009 00:40:05 +0100
+
+eds-backend-telepathy (0.4.38-1) unstable; urgency=low
+
+  * Fixes: NB#119597 - telepathy backend doesn't implement
+    set_view_sort_order()
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 29 Jun 2009 20:24:12 +0100
+
+eds-backend-telepathy (0.4.37-1) unstable; urgency=low
+
+  * Fixes: NB#121955 - tp backend needs to communicate whether a contact's
+    username is invalid
+  * Fixes: NB#103406 - contact editor does not unblock server-side-blocked
+    contacts
+  * Update contacts' aliases based on the NICKNAME vcard field and not on FN
+  * Fixes: NB#122999 - memory leak when deleting contacts
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 22 Jun 2009 21:21:52 +0100
+
+eds-backend-telepathy (0.4.36-1) unstable; urgency=low
+
+  * Set the loaded and writable flags in the load_source method
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 18 Jun 2009 21:18:32 +0100
+
+eds-backend-telepathy (0.4.35-1) unstable; urgency=low
+
+  * Remove the asserts that were added to help with fixing NB#115549
+  * Fixes: NB#115549 - very rare crash in eds-backend-telepathy
+  * Fixes: NB#123119 - loaded and writable flags are not handled in tp backend
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Wed, 17 Jun 2009 19:09:05 +0100
+
+eds-backend-telepathy (0.4.34-1) unstable; urgency=low
+
+  * Fixes: NB#121577 - crash when disabling accounts
+  * Fixes: NB#121570 - Always keep alive the contact and TpCl objects when
+    running _run_ methods
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Tue, 16 Jun 2009 10:05:02 +0200
+
+eds-backend-telepathy (0.4.33-1) unstable; urgency=low
+
+  * Fixes: NB#121104 - eds-backend-tp crashes immediately upon account sign-in
+  * Fixes: NB#119821 - tp backend still too verbose
+  * Fixes: NB#121397 - eds-backend-tp leaks memory and warns when updating an
+    existing contact
+  * Make the asserts for debugging NB#115549 more useful
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 08 Jun 2009 23:30:15 +0100
+
+eds-backend-telepathy (0.4.32-1) unstable; urgency=low
+
+  * Fixes: NB#118681 - e_book_backend_tp_cl_get_members doesn't call the
+    callback if there are no contacts
+  * Fixes: NB#119208 - If the only roster contact is deleted it doesn't
+    disappear
+  * Fixes: NB#117934 - Contacts are added in the contact list after rejecting
+    the authorization request
+  * Fixes: NB#118058 - Use the "stored" list instead of the "known" one
+  * Fixes: NB#91452 - Unable to delete IM contacts from UI
+  * Add asserts to try to understand the cause of NB#115549
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 01 Jun 2009 21:00:13 +0100
+
+eds-backend-telepathy (0.4.31-1) unstable; urgency=low
+
+  * Fixes: NB#116976 - Invalid warnings about missing diskspace
+  * Fixes: NB#114919 - Channels and connection leaked in EBookBackendTpCl
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 25 May 2009 20:24:52 +0100
+
+eds-backend-telepathy (0.4.30-1) unstable; urgency=low
+
+  * Fixes NB#114086: Don't return OtherError in case of invalid contact IDs
+  * Fixes NB#109672: <MemLeak> Memory leaks in eds backend telepathy
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 18 May 2009 18:32:13 +0100
+
+eds-backend-telepathy (0.4.29-1) unstable; urgency=low
+
+  * Fixes NB#112113: Handle standard vcard parameters such as "type=home"
+  * Fix leak while removing contacts
+  * Fixes NB#107519: By default it is displaying the nick name for IM contacts
+  * Fixes NB#116376: On purpose leaks in the EDS backend implementation
+  * Fixes NB#116997: Deleted contacts are still visible
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 14 May 2009 23:29:05 +0100
+
+eds-backend-telepathy (0.4.28-1) unstable; urgency=low
+
+  * Fixes NB#114788: crash in tp_cl_contacts_added at e-book-backend-tp.c:567
+  * Fixes NB#115549: address book factory crashed while entering nickname in
+    new contact dialog
+  * Fixes NB#107563: Booting the device makes duplicates from changed Gtalk
+    contacts
+  * Fixes NB#110313: A duplicate contact created after changing the avatar of
+    a Gtalk contact
+  * Fixes NB#114481: Merged IM-contacts get recreated after rebooting
+  * Reference the contacts we are inspecting to avoid them to be deleted in
+    the meantime
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 11 May 2009 21:32:37 +0100
+
+eds-backend-telepathy (0.4.27-1) unstable; urgency=low
+
+  * Fixes NB#112412: Wrong avatar is updating for IM contacts
+  * Fixes NB#114789: crash in tp_channel_ready_cb at
+    e-book-backend-tp-cl.c:762
+  * Fixes NB#114791: crash in e_book_backend_tp_cl_remove_contact at
+    e-book-backend-tp-cl.c:2386
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 07 May 2009 21:52:51 +0100
+
+eds-backend-telepathy (0.4.26-1) unstable; urgency=low
+
+  * Remove debug messages for every ref/unref of a contact
+  * Fix a memory leak while freeing unused DBs 
+  * Avoid using tp-glib _run_ functions where they can cause idle callbacks
+    to be executed
+  * Fix memory corruption when removing a tp EBook (partial fix for NB#110090)
+  * Fixes NB#112484: tp-backend leaks memory while disposing EBookBackendTp
+    object
+  * Fixes NB#113934: don't show status icon for contacts if offline
+  * Fixes NB#113936: offline contacts should not have a status message
+  * Don't generate the vcard updates if there are no views
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Tue, 05 May 2009 10:04:01 +0100
+
+eds-backend-telepathy (0.4.25-1) unstable; urgency=low
+
+  * Remove debug messages for every ref/unref of a contact
+  * Fix a memory leak while freeing unused DBs 
+  * Avoid using tp-glib _run_ functions where they can cause idle callbacks
+    to be executed
+  * Fix memory corruption when removing a tp EBook (partial fix for NB#110090)
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 23 Apr 2009 00:23:04 +0100
+
+eds-backend-telepathy (0.4.24-1) unstable; urgency=low
+
+  * Use the new logging functions in EDS (see NB#101873)
+  * Notify of change only the contacts that really changed on the server and
+    not every contact
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Wed, 08 Apr 2009 09:48:53 +0100
+
+eds-backend-telepathy (0.4.23-1) unstable; urgency=low
+
+  * Fixes: NB#104841: Poor performances with multiple views
+  * Fixes: NB#104464: Coverity reports
+  * Add the profile name to the vcards so we can show the correct icon in the
+    address book even after the deletion of the corresponding chat account.
+  * Don't report a disk full error if there are more then 8 MB of disk space,
+    even if it's less than the 3% threshold.
+  * Notify changes in the contact list in batches to decrease the number of
+    change notifications sent.
+  * When notifying the views of some changes do not generate an EContact per
+    view but one for all of them.
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 02 Apr 2009 19:54:02 +0100
+
+eds-backend-telepathy (0.4.22-1) unstable; urgency=low
+
+  * Fix some build warnings.
+  * Don't do anything when an account is deleted. Other components will take
+    care of it and of removing the corresponding book.
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 30 Mar 2009 09:23:01 +0100
+
+eds-backend-telepathy (0.4.21-1) unstable; urgency=low
+
+  * Fixes: NB#94836 - By default contact IM account mail id is displaying in
+    Last name field
+  * Remove a debug check left by mistake.
+  * Fix a memory leak.
+  * Do not include a deprecated libmcclient header.
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 26 Mar 2009 08:49:09 +0000
+
+eds-backend-telepathy (0.4.20-1) unstable; urgency=low
+
+  * Add librtcom-telepathy-glib as a build dependency (Marco).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Mon, 16 Mar 2009 09:37:37 +0000
+
+eds-backend-telepathy (0.4.19-1) unstable; urgency=low
+
+  * Add support for the ContactInfo Telepathy interface (Tan Miaoqing, some
+    changes by Marco).
+    Fixes: NB#100696 - FN is used in preference to NICKNAME to update the
+                       Telepathy alias
+  * Don't pass to a g_critical an McAccount object but its name (Marco).
+  * Add checks that make all the backend methods fail cleanly if a book where
+    an error occurred is used (Marco).
+    Fixes: NB#105620 - e-addressbook-factory crashes while trying to add a
+                       contact to a SIP account from backend
+  * Don't try freeing a GSList of EContacts with g_object_unref (Marco).
+  * Be sure to keep the backend alive in between a call to
+    e_book_backend_tp_cl_get_members and the callback being called (Marco).
+    Fixes: NB#104756 - Random crash while navigating from one contact to other
+                       contacts when contacts having long name with special
+                       characters
+  * If the cache DB cannot be opened throw it away and retry (Marco).
+    Fixes: NB#105888 - Account unusable if the DB cannot be open as the schema
+                       changed
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Sun, 15 Mar 2009 22:52:49 +0000
+
+eds-backend-telepathy (0.4.18-1) unstable; urgency=low
+
+  * Check if there is available disk space before doing operations that could
+    moodify the DB (Marco).
+  * Print the avatar token when the contact details are updated to make
+    debugging easier (Marco).
+  * If a contact's avatar token is NULL (for instance because the contact is
+    offline) then use the one cached in the DB (Marco); Fixes: NB#104598
+  * Fix various memory leaks (Marco).
+    Fixes: NB#104468 - Several memory leaks in the tp backend
+  * Don't pass a G_TYPE_INT to a marshaller expecting an enum (Marco).
+  * Don't load accounts that don't support rosters (Marco).
+    Fixes: NB#88226 - address book of SIP account is accessible
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 12 Mar 2009 00:14:22 +0000
+
+eds-backend-telepathy (0.4.17-1) unstable; urgency=low
+
+  * Avoid the destruction of the contact list in between the call to
+    tp_connection_call_when_ready and the callback being called (Marco);
+    Fixes: NB#103153
+  * Print the error message if mc_account_call_when_ready fails (Marco).
+  * Use g_warning instead of g_critical if we fail to connect to some signals
+    because the CM doesn't implement the interface (Marco).
+  * Do not set the PHOTO field in the vcard if there is no avatar (Marco);
+    Fixes: NB#88072
+  * Do not request the avatar if the avatar token is empty (Marco).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 05 Mar 2009 07:49:28 +0000
+
+eds-backend-telepathy (0.4.16-1) unstable; urgency=low
+
+  * When reusing an existing EBookBackendTpContact increase its ref count
+    (Marco); Fixes: NB#102146
+  * If the creation of a new EBookBackendTpContact fails (for instance because
+    the JID is invalid) don't try to unref it (Marco); Fixes: NB#102396
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 26 Feb 2009 10:02:03 +0000
+
+eds-backend-telepathy (0.4.15-1) unstable; urgency=low
+
+  * Simplify the loading code and avoid executing the same code multiple times
+    if the same account source is loaded more than once (Marco).
+  * Fix some memory-related problems found by coverity (Marco);
+    Fixes: NB#101285
+  * Avoid calling telepathy-glib functions on 0 contacts to avoid critical
+    warnings (Marco).
+  * Don't unref twice the hash table containing the contacts to delete
+    (Marco).
+  * Fix various compiler warnings (Marco).
+  * If the alias is not set leave the "FN" vcard field empty instead of
+    setting it to the contact ID (Marco); Fixes: NB#94836
+  * Set the GError argument if e_book_backend_tp_db_delete fails to remove the
+    database file (Marco).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 19 Feb 2009 09:48:51 +0000
+
+eds-backend-telepathy (0.4.14-1) unstable; urgency=low
+
+  * Don't call mission control methods from an EDS thread (Marco).
+  * Avoid to use the database object after the deletion of the on-disk
+    database (Marco).
+  * Don't crash after a g_return_if_fail() because the error is not set and
+    error->message is accessed (Marco).
+  * Check more error conditions when loading data and don't leak GErrors
+    (Marco).
+  * Add some critical warnings to verify that some code is really dead code as
+    it seems before removing it (Marco).
+  * Various small build fixes (Marco).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Wed, 11 Feb 2009 22:31:12 +0000
+
+eds-backend-telepathy (0.4.13-1) unstable; urgency=low
+
+  * Remove the DBs for deleted accounts at startup (Marco).
+  * Implement atomic removal of master UIDs (Mathias).
+  * Remove all the contacts and the database when an account is removed
+    (Marco).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 05 Feb 2009 00:42:38 +0000
+
+eds-backend-telepathy (0.4.12-1) unstable; urgency=low
+
+  * Update master UID list when adding duplicate contacts to prevent lost
+    updates when linking new master contacts. Needed for NB#93982.
+  * Properly set flags when creating new roster contacts to make sure that
+    master uids are stored (Mathias).
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 29 Jan 2009 18:15:28 +0000
+
+eds-backend-telepathy (0.4.11-1) unstable; urgency=low
+
+  * Fix a race condition between start_book_view_idle_cb() and
+    tp_cl_get_members_cb() which can lead to contacts being sent before they
+    are completely ready (Travis).
+  * Send contacts along to front-end as soon as they're ready from the
+    database so that offline accounts still list contacts based on their
+    last-known state (Travis); Fixes: NB#97708
+  * Implement the backend function called by e_book_add_contacts (Marco);
+    Fixes: NB#92640
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Wed, 28 Jan 2009 17:47:29 +0000
+
+eds-backend-telepathy (0.4.9-1) unstable; urgency=low
+
+  * Use libbmcclient instead of the now deprecated libmissioncontrol (Marco,
+    reviewed by Travis); Fixes: NB#96302
+  * Use the new TpContact API to reduce the number of roundtrips and make also
+    the code clearer/cleaner (Marco, reviewed by Travis); Fixes: NB#97470
+  * Make sure to emit signals notifying changes in the contact list only when
+    the name has been retrieved (Marco).
+  * Refactor some code to avoid adding idle callbacks when they are not needed
+    (Marco).
+  * Keep a reference to the backend when loading a contact list to avoid it
+    being destroyed while we are using it (Marco); Fixes: NB#97969
+  * Disconnect signal handlers when disposing EBookBackendTp (Marco);
+    Fixes: NB#97952
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Thu, 15 Jan 2009 14:45:00 +0000
+
+eds-backend-telepathy (0.4.8-1) unstable; urgency=low
+
+  * Fix some build warnings (Marco).
+  * If available use the account name passed on the command line to test-tpcl
+    instead of the hard coded one (Marco).
+  * Update and notify when contacts avatars change from one image to another,
+    pre-existing image (Travis).
+  * Don't show contacts as still online when we are disconnected from an
+    account (Marco); Fixes: NB#97218
+  * Don't require a precise version of libmissioncontrol as newer ones are
+    working too (Marco).
+  * Implement the backend function called by e_book_remove() (Marco);
+    Fixes: #NB95312
+
+ -- Marco Barisione <marco.barisione@maemo.org>  Fri, 9 Jan 2009 14:19:00 +0000
+
+eds-backend-telepathy (0.4.7-1) unstable; urgency=low
+
+  * Avoid calling idle callbacks after the object has been destroyed (Marco);
+    Fixes: NB#92364
+  * Remove unbalanced "BEGIN TRANSACTION" statements.
+  * Use correct order of DELETE and INSERT statements when updating contacts.
+  * Implement virtual get_contact_list() function (Marco); Fixes: NB#95559
+  * Also implement virtual get_contact() function.
+
+ -- Mathias Hasselmann <mathias.hasselmann@maemo.org>  Wed, 17 Dec 2008 15:52:00 +0100
+
+eds-backend-telepathy (0.4.6-1) unstable; urgency=low
+
+  * Fix some memory management issues preventing closing of EBooks.
+  * Simplify code by preparing sqlite statements early.
+  * Support multiple master UIDs per contact.
+
+ -- Mathias Hasselmann <mathias.hasselmann@maemo.org>  Wed, 09 Dec 2008 10:32:20 +0100
+
+eds-backend-telepathy (0.4.5-1) unstable; urgency=low
+
+  * Support deletion of OSSO-MASTER-UID and FN attributes
+
+ -- Mathias Hasselmann <mathias.hasselmann@maemo.org>  Wed, 26 Nov 2008 14:36:19 +0000
+
+eds-backend-telepathy (0.4.4-3) unstable; urgency=low
+
+  * Rebuild due to e-d-s ABI break
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Tue, 11 Nov 2008 11:31:26 +0200
+
+eds-backend-telepathy (0.4.4-2) unstable; urgency=low
+
+  - Fix a syntax error with debian/changelog and bump the version in
+  configure.ac.
+
+ -- Travis Reitter <travis.reitter@maemo.org>  Sat, 25 Oct 2008 10:24:49 -0700
+
+eds-backend-telepathy (0.4.4-1) unstable; urgency=low
+
+  - Cut out extra implementations of backend functions (there should be exactly
+  one implementation of each function among both the EBookBackendClass and
+  EBookBackendSyncClass classes) (Travis).
+
+ -- Travis Reitter <travis.reitter@maemo.org>  Sat, 25 Oct 2008 10:14:22 -0700
+
+eds-backend-telepathy (0.4.3-1) unstable; urgency=low
+
+  - Refuse to create contacts without a valid IM field attribute. Prevents a
+  crasher in the backend (Travis); Fixes: NB#87912
+  - Create stub functions for unsupported EBookBackend and EBookBackendSync
+  virtual methods to prevent a caller from crashing the backend (Travis);
+  Fixes: NB#88121
+  - Refuse to create contacts with an existing, but empty IM field attribute
+  (Travis); Fixes: NB#87913
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Tue, 21 Oct 2008 11:21:54 -0700
+
+eds-backend-telepathy (0.4-1) unstable; urgency=low
+
+  * New release:
+  - Set the generic status on e_book_backend_tp_contact_new.
+  - When modifying return an accurate EContact.
+  - Only emit signals wit non-empty arrays.
+  - Update the contact before generating UID.
+  - Change format of X-TELEPATHY-PRESENCE field.
+  - Add README with technical documentation.
+  - Embed the MC unique account name into the UID making the UIDs unique
+    across the system.
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Tue, 12 Aug 2008 16:50:04 +0100
+
+eds-backend-telepathy (0.3-1) unstable; urgency=low
+
+  * New release:
+  - Switch over to use the SimplePresence interface.
+  - Export the generic presence status in the VCARD
+  - Base the UID off the name and ensure it's unique
+  * Fix packaging issues.
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Wed, 06 Aug 2008 17:29:58 +0100
+
+eds-backend-telepathy (0.2-1) unstable; urgency=low
+
+  * New release:
+  - Export capabilities details
+  - Persist X-OSSO-MASTER-UID field
+  - Rename X-PRESENCE field
+  - Support non-Jabber CMs
+  - Use SQL transactions for multiple updates.
+  - Batch DB updates from roster
+  - Use CM uid for FN if alias blank
+  - Fetch the alias after delivering the member data
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Tue, 05 Aug 2008 11:11:37 +0100
+
+eds-backend-telepathy (0.1-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Joergen Scheibengruber <Jorgen.Scheibengruber@nokia.com>  Tue, 29 Jul 2008 11:42:54 +0100

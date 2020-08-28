@@ -1,0 +1,27 @@
+Source: eds-backend-telepathy
+Section: base
+Priority: optional
+Maintainer: Jörgen Scheibengruber <Jorgen.scheibengruber@nokia.com>
+Uploaders: Marco Barisione <marco.barisione@collabora.co.uk>, Mathias Hasselmann <mathias.hasselmann@maemo.org>
+Build-Depends: debhelper (>= 5.0.0), cdbs, intltool (>= 0.28-2), libdbus-glib-1-dev (>= 0.73-0osso2), libebook-dev, libedata-book-dev, libedataserver-dev, evolution-data-server-dev (>=1.4.2.1-20090515), libtelepathy-glib-dev, libmcclient-dev (>=5.0.beta46), libsqlite3-dev, librtcom-telepathy-glib-dev (>=0.1.22), mce-dev
+Standards-Version: 3.7
+
+Package: evolution-data-server-addressbook-backend-telepathy
+Section: devel
+Architecture: any
+Depends: ${shlibs:Depends}, evolution-data-server-addressbook
+Description: Telepathy backend for Evolution Data Server
+ This package provides a backend for Evolution Data Server than allows access
+ to the Telepathy roster.
+
+Package: evolution-data-server-addressbook-backend-telepathy-dbg
+Section: devel
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, evolution-data-server-addressbook-backend-telepathy (= ${source:Version})
+Description: Telepathy backend for Evolution Data Server
+ This package provides a backend for Evolution Data Server than allows access
+ to the Telepathy roster.
+ .
+ This package contains the debugging symbols.
+

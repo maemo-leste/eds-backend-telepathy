@@ -1,0 +1,10 @@
+#! /bin/sh
+
+case "$1" in
+install|upgrade)
+    if dpkg --compare-versions "$2" le "0.4.50-1"; then
+        rm "/etc/osso-backup/pre-backup.d/eds-backend-telepathy-backup.sh" 2> /dev/null || true
+        rm "/etc/osso-backup/restore.d/always/eds-backend-telepathy-restore.sh" 2> /dev/null || true
+        rm "/etc/osso-backup/applications/eds-backend-telepathy.conf" 2> /dev/null || true
+    fi
+esac

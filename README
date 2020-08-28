@@ -1,0 +1,310 @@
+This backend provides a bridge between the Evolution Data Server (EDS) and the
+Telepathy (TP) roster.
+
+Expected behaviour
+======== =========
+
+Getting the contacts from the book:
+~~~~~~~ ~~~ ~~~~~~~~ ~~~~ ~~~ ~~~~~
+
+The client should open the book once the account has been created by TP
+Mission Control. Any attempts to open the book with an invalid account name
+will result in an error immediately.
+
+The format of the URL used for the backend is of the form:
+
+tp://<MC account unique name>
+
+The formatting of this string varies from MC version to MC version but you
+might expect it to look like either 'gtalk0' or
+'gabble/jabber/user_40host_2ecom0'
+
+Once opened the client should create a book view on the book. And connect to
+the contacts-added, contacts-changed, contacts-removed and sequence-complete
+signals.
+
+If the account is offline and and the account has never been online then the
+book view will contain no items. If the account has previously been online
+then the book view will be populated with a set of contacts that have been
+cached from when the account was last online.
+
+When the account goes online the book view is updated to reflect any changes
+to the contacts that are relevant now that we are online. It is important to
+note that this behaviour of the book view being populated with contacts from
+the database cache and then updated based on the TP roster still occurs even
+if the account is online when the book is opened. Hence it is important to
+connect to the contacts-changed signal.
+
+The reconciliation process that updates the internal state of the backend to
+match that of the roster (whilst taking into account pending changes) applies
+each time the account goes online. This process involves retrieving the
+contacts from the roster and then iterating over all the contacts in the
+roster. If the contact already exists in the internal representation and the
+database then the contact is updated to match that received from the roster.
+With the exception that any fields that were changed when the account was
+offline will not be touched. These changes will be applied after this stage of
+the reconciliation process. Any new contacts that appear in the roster will be
+created and persisted in the cache.
+
+To deal with contacts that have been deleted from the roster from outside each
+contact is marked with a flag when it is imported from the database. This flag
+is then removed when it is 'seen' i.e. a matching contact is found in the
+roster. Any contacts that remain with this flag are those that should be
+removed from the database.
+
+Making changes to a contact
+~~~~~~ ~~~~~~~ ~~ ~ ~~~~~~~
+
+The client can modify contacts using the usual EBook e_book_add_contact
+function. In general the backend implementation of this functionality does not
+return an error instead it attempts to apply the changes to the contact on a
+best effort basis.
+The function e_book_commit_contact should be avoided to modify contacts as
+it's racy. e_book_add_contact will take care of adding the contact if it
+doesn't exist or to update it if it already exists.
+
+The backend will parse the contact provided by the client and change as many
+of the writeable fields as a possible. In order to avoid undesirable results
+the client should always ensure it bases the updated contact on the most
+recent version it can. If it wishes to avoid accidentally changing extra
+fields then it should strip those fields from the contact.
+
+In general the contact should have a VCARD format that closely matches the
+one described below. Some points to note:
+
+* If a given field is included multiple times then which is used is undefined.
+  Therefore please ensure that you include fields at most once.
+* Any extra field parameters/types will be ignored.
+
+If the contact is successfully updated a signal may be emitted from all
+EBookViews. The version of the contact used in this case is derived from the
+internal representation used by the backend. Thus it will have duplicate
+fields, excess fields and extra type and parameter details stripped.
+
+It is expected that all all contact parameters are in UTF-8. Other formats are
+not supported and the client should ensure it converts to UTF-8.
+
+In some cases it may not be possible to change a particular field on the
+contact due to server-side restrictions. In this case the change will be
+attempted and such a change will be reflected in version of the contact
+maintained in the internal structures and database. However when the account
+next goes online the change will be lost and value will be restored to the
+version used on the roster. The reason for this is that we get no direct
+feedback that a given operation failed or succeeded. We do get a notification
+from the TP CM when a change has been applied however this point at which
+this happens is indeterminate.
+
+Creating a new contact
+~~~~~~~~ ~ ~~~ ~~~~~~~
+
+The client can add contacts using the EBook e_book_add_contact function.
+
+Once the contact is created the contacts-added signal will be emitted on the
+EBookView and the contact that it provides will have contain the UID for the
+newly created contact. If the account is online the contact will be added
+immediately
+
+You must provide a field for the TP CM username. Failing to do so will raise
+an error. It is also advisable for the client to set X-TELEPATHY-PUBLISHED and
+X-TELEPATHY-SUBSCRIBED to yes.
+
+Depending on the server configuration it may not be possible to add contacts
+to the roster. In which case the attempt will be made when the client goes
+online and reflected in the EBookView.
+If the addition of the new contact fails, for instance because the provided
+contact ID is invalid, the parameter X-OSSO-VALID of the protocol specific
+vcard field (for instance X-JABBER) will be set to "no". This is needed as the
+feedback on the validity of the contact ID can only be given after going
+online.
+
+Deleting a contact
+~~~~~~~~ ~ ~~~~~~~
+
+A client can delete a contact using the usual e_book_remove_contact function
+which simply takes the UID for the contact to delete. Provided that the UID is
+valid the backend will ordinarily return that the contact has been
+successfully deleted and a signal will original from the EBookView. If the
+account is online then the backend will attempt to delete the contact by
+removing it from all the contact lists on the CM that is is a member of
+otherwise the contact will be scheduled for deletion in the database to be
+applied when the client next goes online.
+
+Usually deleting a roster contact is wanted only if there are no master
+contacts attached to it, but checking this condition and then removing the
+contact is racy. To avoid this "if-unused" can be appended to the roster UID
+separated by a ";":
+
+       gabble/jabber/foo_40bar_2eorg0-someone_40example_2ecom0;if-unused
+
+When requesting removal of this contact it will be removed only if no master
+contacts are attached to the contact for someone@example.com.
+For more details see "Atomic master UID list changes".
+
+In some cases, depending on the server configuration, it may not be possible
+to delete a given contact. In this case the deletion will be attempted and
+will be reflected in the book view. However when the account next goes online
+the deleted contact will be added back into the backend. The reason for this
+is that we get no direct feedback that a given operation failed or succeeded
+until we go online.
+
+VCARD format
+~~~~~ ~~~~~~
+
+An example of the VCARD is below:
+
+BEGIN:VCARD
+VERSION:3.0
+PHOTO;VALUE=URI:file:///home/user/.osso-abook/avatars/40b817e31d1dd6af33fbc6ed8916a1c94a205e57
+X-TELEPATHY-CAPABILITIES:text;voice;video
+X-TELEPATHY-PRESENCE:available;
+X-TELEPATHY-BLOCKED:no
+X-TELEPATHY-PUBLISHED:yes
+X-TELEPATHY-SUBSCRIBED:yes
+X-TELEPATHY-HANDLE:5
+NICKNAME:Joe Bloggs
+X-JABBER;X-OSSO-VALID=yes;TYPE=jabber:joebloggs@domain.com
+UID:gabble/jabber/myaccount_2edomain_40com-joebloggs@domain.com
+END:VCARD
+
+Considering the fields in detail:
+
+PHOTO;VALUE=URI:file://<some local uri>
+
+This field is read only. It will be present if the account is offline iff. the
+avatar token is known and the avatar has been successfully downloaded to the
+avatar cached.
+
+X-TELEPATHY-CAPABILITIES:{text,voice,video}
+
+This field is read only. It will be present iff. the account is online and at
+least one of the capabilities is available. The field is multi-valued and
+contain any subset of {text, voice, video}.
+
+X-TELEPATHY-BLOCKED: [yes, no, local-pending, remote-pending]
+
+This field is writeable and always present. It can be set when the account is
+online or offline. It's value maps to the contact's handle's state on the
+'deny' TP contact list (representing contacts who are denied the ability to
+contact us). When set whilst the account is online the change is applied to
+the TP roster immediately, when offline the change is cached in the database
+to be applied when the account next goes online. Any attempt to set an invalid
+value will result in no change being made.
+Note that not all the IM protocols and servers support blocking contacts.
+
+X-TELEPATHY-PUBLISHED: [yes, no, local-pending, remote-pending]
+
+This field is writeable and always present. It can be set when the account is
+online or offline. It's value maps to the contact's handle's state on the
+'publish' TP contact list (representing contacts who can see our presence).
+When set whilst the account is online the change is applied to the TP roster
+immediately, when offline the change is cached in the database to be applied
+when the account next goes online. Any attempt to set an invalid value will
+result in no change being made.
+
+X-TELEPATHY-SUBSCRIBED: [yes, no, local-pending, remote-pending]
+
+This field is writeable and always present. It can be set when the account is
+online or offline. It's value maps to the contact's handle's state on the
+'subscribe' TP contact list (representing contacts whose presence we can see).
+When set whilst the account is online the change is applied to the TP roster
+immediately, when offline the change is cached in the database to be applied
+when the account next goes online. Any attempt to set an invalid value will
+result in no change being made.
+
+NOTE: When changing the above three fields you are only permitted to set the
+state to 'yes' or 'no'. The other values are the result of transitions between
+these two states.
+
+X-TELEPATHY-HANDLE: n
+
+This field is read only and will be present iff. the account is online. It
+represents the handle for the contact on the TP CM.
+You should never cache this value as it will change if the account goes
+offline and then online again.
+
+X-OSSO-MASTER-UID: <string>
+
+This field is writeable and will be present if the value is set. It stores the
+UID for a contact in the main address book with which this contact can be
+associated with. The backend will persist the value of this field so that a
+client can maintain some kind of relationship between contacts across
+different backends.
+
+NICKNAME: <string>
+
+This field is read only. Its value maps to the contact's alias. It's present
+only if the contact's alias is set on the server.
+
+e.g. X-JABBER: <string>
+
+This field is CM specific. It's writeable at creation time only and will
+always be present. It represents the contact's username on the TP roster. It
+may occasionally be changed by the backend since when the contact is created
+the username may be normalised to a different value to that provided by the
+creating client.
+The parameter X-OSSO-VALID will be set to no to report asynchronously errors
+while creating the contact on the server.
+The parameter TYPE is set to the name of the mission control profile of the
+account so, for instance, the UI can show a different icon for plain jabber
+contacts and for gtalk ones.
+
+UID: <string>
+
+This is field is read only and always present. It is created when the contact
+is first added to the backend and it is derived from the username for the
+contact (see above.) This field is important as it is used to determine which
+contact a given VCARD supplied to the backend is supposed to represent.
+
+Design notes
+====== =====
+
+Database cache
+~~~~~~~~ ~~~~~
+
+The cache is maintained in an sqlite3 database in
+$HOME/.osso-abook/db/tp-cache/<MC account unique name>
+
+This cache is updated by indirect changes to the backend coming from the
+TP roster and also used to store changes requested by the user. In the former
+the writes are queued in the backend to try and minimise the frequency of
+database updates with the intention of minimising power consumption.
+
+In the latter updates are persisted into the database to allow changes whilst
+the account is offline.
+
+Atomic master UID list changes
+~~~~~~ ~~~~~~ ~~~ ~~~~ ~~~~~~~
+
+The master UID list of contacts can be modified atomically. To implement this
+feature the functions for adding and removing contacts behave slightly
+differently than usual.
+
+New master UIDs can be added by adding a new contacts to the book:
+
+       VCARD:BEGIN
+       X-JABBER:someone@example.com
+       MASTER-UID:87
+       VCARD:END
+
+If that contact matches an existing contact, the master UID lists of the new
+and the existing contact are merged. Book views will emit "contacts-update"
+signals instead of "contacts-added" in that case.
+
+Master UIDs can be removed by appending the master UIDs to remove to the
+IM contact's UID:
+
+       gabble/jabber/foo_40bar_2eorg0-someone_40example_2ecom0;87;88
+
+When requesting removal of this contact the master UIDs 87 and 88 will be
+removed from the contact for someone@example.com. The contact itself only is
+removed when no master UIDs are left.
+
+It's possible to remove a master UID without also removing the roster contact
+in case no other master UIDs are left. This is done by appending "preserve" to
+the list of master UIDs to remove:
+
+       gabble/jabber/foo_40bar_2eorg0-someone_40example_2ecom0;42;preserve
+
+When requesting removal of this contact the master UID 42 will be removed from
+the contact for someone@example.com. The contact itself will not be removed,
+even if no master UIDs are left.

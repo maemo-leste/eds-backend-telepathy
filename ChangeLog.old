@@ -1,0 +1,2205 @@
+2009-10-02  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Use G_MAXUINT for the timeout when requesting a channel so that the
+	channel request doesn't timeout.
+
+	* src/e-book-backend-tp-cl.c (request_handles_for_contact_list_cb):
+
+2009-10-02  Marco Barisione <marco.barisione@collabora.co.uk>
+
+	Release 0.4.51
+
+2009-10-02  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Joergen Scheibengruber
+
+	Update the README as it was really outdated.
+
+	* README:
+
+2009-10-02  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Joergen Scheibengruber
+
+	Change the license from Nokia proprietary to LGPL.
+
+	* AUTHORS:
+	* COPYING:
+	* src/e-book-backend-tp-cl.c:
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp-contact.c:
+	* src/e-book-backend-tp-contact.h:
+	* src/e-book-backend-tp-db.c:
+	* src/e-book-backend-tp-db.h:
+	* src/e-book-backend-tp-factory.c:
+	* src/e-book-backend-tp-log.c:
+	* src/e-book-backend-tp-log.h:
+	* src/e-book-backend-tp-types.c:
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c:
+	* src/e-book-backend-tp.h:
+	* src/test-tpcl.c:
+	* test/add-contacts.c:
+	* test/change-aliases.c:
+	* test/remove-contacts.c:
+	* test/test-utils.c:
+	* test/test-utils.h:
+
+2009-09-14  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.50
+
+2009-09-04  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Avoid removing the .restore files associated to non-existent accounts.
+	EDS can be restarted before the mission-control accounts are
+	restored, so we can end up deleting valid restore files because we
+	think they are unused.
+
+	* src/e-book-backend-tp-db.c (get_restore_db_filename),
+	(remove_accounts_from_hash_table),
+	(e_book_backend_tp_db_cleanup_unused_dbs):
+
+2009-08-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.49
+
+2009-08-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Remove some dead code that has been commented out for months and is
+	not going to be used again.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_request_avatar_data):
+	* src/e-book-backend-tp.c:
+
+2009-08-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Emit a critical warning if the unsupported modify_contact method is
+	called.
+
+	* src/e-book-backend-tp.c (e_book_backend_tp_modify_contact):
+
+2009-08-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not leak the McAccountManager used to list the configured accounts.
+	This memory leak fix also fixes a problem with wake-ups due to the
+	NameOwnerChanged signal.
+
+	* src/e-book-backend-tp-db.c (unref_idle_cb), (manager_ready_cb):
+
+2009-08-14  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.48
+
+2009-08-13  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Check whether the connection is not NULL before using it.
+
+	The signal for the disconnection from an account can arrive from
+	mission control before some callbacks are called in response to
+	something happening in the connection manager. This means we have to
+	verify if the connection is still valid before using it or we could
+	pass a NULL connection to telepathy-glib.
+
+	* src/e-book-backend-tp-cl.c (verify_is_connected),
+	(channel_members_changed_closure_free), (update_changed_members),
+	(members_changed_with_details_cb),
+	(handle_members_changed_idle_cb), (tp_channel_members_changed_cb),
+	(tp_channel_ready_cb), (tp_request_channel_cb),
+	(request_handles_for_contact_list_cb), (aliases_changed_cb),
+	(avatar_retrieved_cb), (avatar_updated_cb), (presences_changed_cb),
+	(tp_connection_ready_cb), (capabilities_changed_cb),
+	(get_capabilities_for_members_cb), (contact_info_changed_cb),
+	(get_contact_info_for_members_cb),
+	(verify_is_connected_for_get_channel_members), (get_contacts_cb),
+	(finish_get_channel_members), (channel_get_all_members_cb),
+	(get_next_channel_members),
+	(e_book_backend_tp_cl_run_update_flags),
+	(e_book_backend_tp_cl_run_add_contact),
+	(e_book_backend_tp_cl_run_remove_contact),
+	(e_book_backend_tp_cl_run_unblock_contact),
+	(e_book_backend_tp_cl_request_avatar_data):
+
+2009-08-13  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.47
+
+2009-08-12  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Be sure that the EDS factory is not running after restoring the files
+	so we don't have to wait for a reboot to see the restored contacts.
+
+	The reason for this change is that sometimes the restore of contacts
+	was not reflected until reboot, the possible cause is that something
+	else (maybe osso-backup) was restarting the factory before we created
+	the .restore files.
+
+	* data/eds-backend-telepathy-restore.sh:
+
+2009-08-11  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Robert Peto
+
+	When doing a backup or restore do not execute the script if we are not
+	doing a backup/restore of the contacts
+
+	* data/eds-backend-telepathy-backup.sh:
+	* data/eds-backend-telepathy-restore.sh:
+
+2009-08-05  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Fix warnings reported by the build bot.
+
+	* debian/control: Set priority of -dbg package to extra.
+
+2009-08-05  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not empty the hash table of contacts to update before actually
+	updating the contacts or they will be unreffed and possibly be freed.
+
+	* src/e-book-backend-tp.c (flush_db_updates):
+
+2009-08-04  Xavier Claessens  <xavier.claessens@maemo.org>
+
+	* src/e-book-backend-tp-contact.c:
+	* src/e-book-backend-tp-contact.h:
+	  - Add new function e_book_backend_tp_contact_remove_all_master_uids().
+	  - plug a leak in e_book_backend_tp_contact_remove_master_uid().
+
+	* src/e-book-backend-tp.c (run_remove_contact, remove_contacts_idle_cb):
+	  - Do not notify views 2 times. The problem was that we give magical
+	    UIDs to e_data_book_respond_remove_contacts() so the notification
+	    were not working properly.
+	  - Make sure to not remove the contact if we are removing some
+	    master_uid but we still have others. In that case, simply notify of
+	    an update of the contact.
+	  - Introduce the new hack for magical UID in form of "rc-uid;*".
+	    In that case, remove all master_uid of the contact but do not remove
+	    it from roster.
+
+2009-08-03  Mathias Hasselmann <mathias.hasselmann@maemo.org>
+
+	Release 0.4.45
+
+2009-08-03  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Mathias Hasselmann
+
+	Fix a memory leak when adding new contacts.
+	
+	There was an extra e_book_backend_tp_contact_ref forgot during some
+	previous change to the code, but this extra reference was also
+	protecting from crashes in case the contact is removed before storing
+	it in the DB.
+	To fix this the extra e_book_backend_tp_contact_ref was removed, but
+	now the GArrays of contacts to add or update (closure->contacts_to_add
+	and closure->contacts_to_update) hold a reference to the contacts.
+
+	* src/e-book-backend-tp.c (_sync_phase_2_idle_cb),
+	(tp_cl_get_members_cb):
+
+2009-08-03  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Mathias Hasselmann
+
+	Fix a memory leak: free the old contact's name before assigning the
+	new one.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_add_contact):
+
+2009-07-31  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Mathias Hasselmann
+
+	Add a cast from gpointer to gchar* to remove a warning about the wrong
+	type used for the format string "%s".
+
+	* src/e-book-backend-tp.c (remove_contacts_idle_cb):
+
+2009-07-27  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.44
+
+2009-07-27  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Create the tp-cache directory if it doesn't exist when restoring
+	backups.
+
+	* data/eds-backend-telepathy-restore.sh:
+
+2009-07-23  Travis Reitter  <travis.reitter@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	NB#120573 - Duplicate contact created if delete the Gtalk field of an IM
+	contact
+
+	Parse the actual roster contact ID out of the mashed-up
+	roster-contact-ID-plus-master-IDs string passed into the backend before
+	giving it to e-data-book-view to notify of the removal.
+
+	* src/e-book-backend-tp.c
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.43
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	It's possible that we get disconnected from an account before
+	completely retrieving the contact list, in this case avoid crashing
+	because the TpConnection has been set to NULL.
+
+	* src/e-book-backend-tp-cl.c (channel_get_all_members_cb):
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Remove an unused variable.
+
+	* src/e-book-backend-tp-cl.c (channel_get_all_members_cb):
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make channel_get_all_members_cb more readable.
+
+	* src/e-book-backend-tp-cl.c (channel_get_all_members_cb):
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not unref a possibly null EContact.
+
+	* src/e-book-backend-tp.c (create_contact_idle_cb):
+
+2009-07-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.42
+
+2009-07-21  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do no send to view contacts that are scheduled for deletion.
+
+	When we delete a contact it's kept in our database until it's actually
+	removed from the server, but we don't have to send it to the views as
+	it has to be treated by the UI like if it was already deleted.
+
+	* src/e-book-backend-tp.c (notify_all_contacts_updated_for_view):
+
+2009-07-20  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Remove directly invalid contacts without trying to remove them from
+	the roster (as they are not in the roster).
+
+	* src/e-book-backend-tp.c (run_remove_contact):
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.41
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make a backup of the avatars too. They can be easily retrieved from
+	the network but having them back just after a restore is nicer for the
+	user.
+
+	* data/eds-backend-telepathy.conf:
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Add the files needed by osso-backup to make backups of IM contacts and
+	restore them.
+
+	* configure.ac: Generate data/Makefile
+	* data/Makefile.am: Add the new data/ dir.
+	* data/eds-backend-telepathy-backup.sh: Add the backup script.
+	* data/eds-backend-telepathy-restore.sh: Add the restore script.
+	* data/eds-backend-telepathy.conf: Add the configuration file telling
+	to osso-backup which directory to save.
+	* debian/evolution-data-server-addressbook-backend-telepathy.install:
+	Install the backup-related files
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Restore the DB files created by the backup/restore application before
+	opening the corresponding books.
+
+	* src/e-book-backend-tp-db.c (e_book_backend_tp_db_open_real):
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not remove the DBs created by the backup restore program when
+	cleaning up unused databases.
+
+	* src/e-book-backend-tp-db.c (get_restore_db_filename),
+	(remove_accounts_from_hash_table):
+
+2009-07-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.40
+
+2009-07-16  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Send an explicit notification of the removal of contacts as soon as
+	they are marked for deletion and do not wait for them to be actually
+	removed from the roster.
+	This was partially working before as libosso-abook considers a contact
+	removed as soon as e_book_remove returns a success code, but other
+	views were not notified of this.
+
+	* src/e-book-backend-tp.c (delete_contacts),
+	(remove_contacts_idle_cb):
+
+2009-07-02  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.39
+
+2009-07-01  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	If the inspection of some contacts fail we remove them from the list
+	of contacts passed as argument to the contacts-added signal, but the
+	condition to verify whether the contacts were inspected or not was
+	wrong.
+
+	* src/e-book-backend-tp-cl.c (remove_invalid_contacts):
+
+2009-07-01  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Remove all the code to update aliases on the server as this is not
+	supposed to happen anymore.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_add_contact):
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp-contact.c
+	(e_book_backend_tp_contact_update_from_econtact):
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c (tp_cl_aliases_changed_cb),
+	(run_update_contact), (run_add_contact), (tp_cl_get_members_cb),
+	(_sync_phase_0_idle_cb), (modify_contact_idle_cb):
+
+2009-07-01  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	When an EBookBackend method is called on a removed book reply with a
+	proper error instead of not replying anything.
+
+	This was problematic as e_book_async_remove is called by libosso-abook
+	when an account is deleted, so for the same book it's called once per
+	application using libosso-abook. The first removal attempt was
+	succeeding while the other ones were emitting a critical warning and
+	not replying to the D-Bus call, meaning that libebook was thinking
+	that the EBook was still valid and usable.
+
+	* src/e-book-backend-tp.c (modify_contact_idle_cb),
+	(remove_contacts_idle_cb), (remove_idle_cb):
+
+2009-06-30  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Emit "flags-changed" when we get the initial contact list and not only
+	when the membership to a contact list changes. If we don't do that
+	then changes to contact list membership (for instance blocking and
+	unblocking) that happen when we are offline are ignored.
+
+	* src/e-book-backend-tp-cl.c (get_contacts_cb):
+
+2009-06-29  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.38
+
+2009-06-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Mathias Hasselmann
+
+	Use the sort order that was previously set with a call to
+	set_view_sort_order when sending all the contacts to the views.
+
+	* src/e-book-backend-tp.c (contact_sort_data_new),
+	(contact_sort_data_free), (contact_sort_data_compare),
+	(notify_all_contacts_updated_for_view):
+
+2009-06-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Mathias Hasselmann
+
+	Implement the set_view_sort_order method on EBookBackendTp.
+
+	* src/e-book-backend-tp.c (e_book_backend_tp_set_view_sort_order):
+
+2009-06-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	Release 0.4.37
+
+2009-06-22  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not leak memory when deleting contacts.
+
+	* src/e-book-backend-tp.c (remove_contacts_idle_cb):
+
+2009-06-19  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Update contacts's aliases based on the NICKNAME field and not on FN.
+
+	* src/e-book-backend-tp-contact.c
+	(e_book_backend_tp_contact_update_from_econtact):
+
+2009-06-19  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Make e_book_add_contact unblock contacts.
+
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c (run_update_contact),
+	(_sync_phase_0_idle_cb), (modify_contact_idle_cb),
+	(run_create_contact):
+
+2009-06-19  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Add e_book_backend_tp_cl_run_unblock_contact to unblock contacts.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_unblock_contact):
+	* src/e-book-backend-tp-cl.h:
+
+2009-06-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	Set the parameter "X-OSSO-VALID" to "no" when sending vcards of
+	contacts with invalid IDs to the views. This way the UI can show
+	contacts with ad invalid ID in a different way.
+
+	* src/e-book-backend-tp-contact.c
+	(e_book_backend_tp_contact_to_econtact):
+
+2009-06-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Travis Reitter
+
+	When a contact ID is invalid keep it around and set a flag saying it's
+	invalid.
+
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c (run_add_contact),
+	(_sync_phase_3_idle_cb), (_sync_phase_0_idle_cb),
+	(run_create_contact), (create_contact_idle_cb),
+	(create_contacts_idle_cb):
+
+2009-06-18  Marco Barisione <marco@barisione.org>
+
+	Release 0.4.36
+
+2009-06-18  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Call e_book_backend_set_is_loaded and e_book_backend_set_is_writable
+	in e_book_backend_tp_load_source and not when the backend is
+	effectively loaded. This is unfortunate but seems to be needed to make
+	EDS work.
+
+	* src/e-book-backend-tp.c (_sync_phase_0_idle_cb),
+	(e_book_backend_tp_load_source):
+
+2009-06-17  Marco Barisione <marco@barisione.org>
+
+	Release 0.4.35
+
+2009-06-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Cast the EBookBackendTp object passed to e_book_backend_set_is_loaded
+	and e_book_backend_set_is_writable to EBookBackend to avoid warnings.
+
+	* src/e-book-backend-tp.c (_sync_phase_0_idle_cb):
+
+2009-06-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Robert Peto
+
+	Call e_book_backend_set_is_loaded and e_book_backend_set_is_writable
+	when the backend is loaded.
+
+	* src/e-book-backend-tp.c (_sync_phase_0_idle_cb):
+
+2009-06-17  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Handle the case in which the inspection of a handle succeeds but the
+	contact is already gone so we don't know anything about it anymore.
+
+	* src/e-book-backend-tp-cl.c (update_contact_details),
+	(remove_invalid_contacts), (members_changed_with_details_cb),
+	(get_contacts_cb):
+
+2009-06-16  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Remove the asserts that were added to help with fixing NB#115549.
+
+	* src/e-book-backend-tp-cl.c (update_contact_details),
+	(members_changed_with_details_cb), (tp_channel_members_changed_cb):
+	* src/e-book-backend-tp.c (tp_cl_contacts_added):
+
+2009-06-16  Marco Barisione <marco@barisione.org>
+
+	Release 0.4.34
+
+2009-06-11  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make safe the functions that use
+	e_book_backend_tp_cl_run_remove_contact.
+
+	* src/e-book-backend-tp.c (run_remove_contact),
+	(remove_contacts_idle_cb):
+
+2009-06-11  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Forgot to rename e_book_backend_tp_cl_remove_contact to
+	e_book_backend_tp_cl_run_remove_contact somewhere in the previous
+	commits.
+
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp.c (_sync_phase_3_idle_cb),
+	(remove_contact):
+
+2009-06-11  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make EBookBackendTp safe when calling e_book_backend_tp_cl_run_*
+	functions.
+
+	* src/e-book-backend-tp.c (run_update_contact),
+	(_sync_phase_3_idle_cb), (run_create_contact):
+
+2009-06-10  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make e_book_backend_tp_cl_run_add_contact safe in case some object is
+	called during the execution of a tp_cli_*_run_* function.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_add_contact):
+
+2009-06-10  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	EBookBackendTpContacts are not GObjects so don't use g_object_(un)ref
+	on them.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_update_flags),
+	(e_book_backend_tp_cl_run_update_alias):
+
+2009-06-10  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make e_book_backend_tp_cl_run_update_alias safe in case some object is
+	called during the execution of a tp_cli_*_run_* function.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_update_alias):
+
+2009-06-10  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Make e_book_backend_tp_cl_run_update_flags safe in case some object is
+	called during the execution of a tp_cli_*_run_* function.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_update_flags):
+
+2009-06-10  Marco Barisione  <marco.barisione@collabora.co.uk>
+
+	reviewed by: Jonathon Jongsma
+
+	Rename functions that call directly or indirectly some tp_cli_*_run_*
+	functions so that it's clear that they are going to run the main loop.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_run_update_flags),
+	(e_book_backend_tp_cl_run_update_alias),
+	(e_book_backend_tp_cl_run_add_contact),
+	(e_book_backend_tp_cl_run_remove_contact):
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp.c (run_update_contact),
+	(_sync_phase_3_idle_cb), (modify_contact_idle_cb),
+	(run_create_contact), (create_contact_idle_cb),
+	(create_contacts_idle_cb):
+
+2009-06-09  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Flush the changes to the DB before disposing the backend object. This
+	is needed both to avoid data loss and to avoid having the timer
+	callback called after the finalization of the object.
+
+	* src/e-book-backend-tp.c (e_book_backend_tp_dispose):
+
+2009-06-08  Marco Barisione <marco@barisione.org>
+
+	Release 0.4.33
+
+2009-06-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Make the asserts useful for debugging even in case of broken
+	stack traces using the comma operator like in:
+	g_assert(("name is null after update", name)).
+
+	* src/e-book-backend-tp-cl.c (update_contact_details),
+	(members_changed_with_details_cb), (tp_channel_members_changed_cb):
+
+2009-06-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	patch by: Travis Reitter
+	reviewed by: Marco Barisione
+
+	Allow a contact to already have a name in
+	e_book_backend_tp_contact_update_from_econtact in case of merge
+
+	* src/e-book-backend-tp-contact.c
+	(e_book_backend_tp_contact_update_from_econtact):
+
+2009-06-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Travis Reitter
+
+	Don't print warnings if requesting some contact lists fail as this is
+	normal in case the connection manager or the server don't support a
+	particular contact list.
+
+	* src/e-book-backend-tp-cl.c (tp_request_channel_cb),
+	(request_handles_for_contact_list_cb):
+
+2009-06-05  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Use g_direct_equal for hash tables with integer keys instead of
+	g_int_equal as g_int_equal is supposed to be used with pointers to
+	integers.
+
+	* src/e-book-backend-tp-cl.c (update_contact_details),
+	(tp_channel_members_changed_cb):
+
+2009-06-01  Marco Barisione <marco@barisione.org>
+
+	Release 0.4.32
+
+2009-06-01  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Add lots of asserts to try to understand what's the cause of bug
+	NB#115549.
+
+	* src/e-book-backend-tp-cl.c (update_contact_details),
+	(members_changed_with_details_cb), (tp_channel_members_changed_cb):
+	* src/e-book-backend-tp.c (tp_cl_contacts_added):
+
+2009-05-28  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Don't use the non standard "known" contact list anymore and use
+	"stored" instead.
+
+	* src/e-book-backend-tp-cl.c (contact_flag_to_string),
+	(contact_list_id_to_string), (get_contact_list_channels):
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c (create_contact):
+
+2009-05-28  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Allow the removal of contacts that are local/remote pending.
+
+	* src/e-book-backend-tp-cl.c (tp_channel_members_changed_cb):
+
+2009-05-28  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Don't leak any member of EBookBackendTpContact.
+
+	* src/e-book-backend-tp-contact.c (e_book_backend_tp_contact_free):
+
+2009-05-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Fix yet another memory leak.
+
+	* src/e-book-backend-tp.c (tp_cl_get_members_cb):
+
+2009-05-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Do not do an early return when loading contacts from the roster if the
+	roster is empty or we will fail at removing from the local cache the
+	deleted contacts.
+
+	* src/e-book-backend-tp.c (tp_cl_get_members_cb):
+
+2009-05-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	When there are no contacts a GArray of TpHandle was passed to the
+	callback passed to e_book_backend_tp_cl_get_members instead of a
+	GArray of EBookBackendTpContact.
+
+	* src/e-book-backend-tp-cl.c (finish_get_channel_members):
+
+2009-05-25  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Fix some memory leaks.
+
+	* src/e-book-backend-tp.c (_sync_phase_3_idle_cb),
+	(tp_cl_get_members_cb):
+
+2009-05-25  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Refactor get_next_channel_members to be more readable.
+
+	* src/e-book-backend-tp-cl.c (finish_get_channel_members),
+	(get_next_channel_members):
+
+2009-05-25  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Call the callback passed to e_book_backend_tp_cl_get_members also when
+	the roster is empty.
+
+	* src/e-book-backend-tp-cl.c (get_next_channel_members):
+
+2009-05-25  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.31
+
+2009-05-22  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Don't leak the Telepathy channels and connection when the
+	EBookBackendTpCl is disposed.
+
+	* src/e-book-backend-tp-cl.c (free_channels_and_connection),
+	(e_book_backend_tp_cl_dispose), (connection_status_changed_cb):
+
+2009-05-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Mathias Hasselmann
+
+	Change the internal get_db_directory() function so that it allocates
+	the DB directory path name once and then returns the cached value at
+	the next invocations.
+
+	* src/e-book-backend-tp-db.c (get_db_directory),
+	(db_filename_for_account),
+	(e_book_backend_tp_db_cleanup_unused_dbs),
+	(e_book_backend_tp_db_check_available_disk_space):
+
+2009-05-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Mathias Hasselmann
+
+	When checking for available disk space check it for the partition
+	where the DB is stored, not for the root directory.
+
+	* src/e-book-backend-tp-db.c
+	(e_book_backend_tp_db_check_available_disk_space):
+
+2009-05-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Mathias Hasselmann
+
+	Fix the indentation of
+	e_book_backend_tp_db_check_available_disk_space().
+
+	* src/e-book-backend-tp-db.c
+	(e_book_backend_tp_db_check_available_disk_space):
+
+2009-05-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Mathias Hasselmann
+
+	Move the function to check for available disk space to
+	e-book-backend.tp-db.c.
+
+	* src/e-book-backend-tp-db.c
+	(e_book_backend_tp_db_check_available_disk_space):
+	* src/e-book-backend-tp-db.h:
+	* src/e-book-backend-tp.c (modify_contact_idle_cb),
+	(create_contact_idle_cb), (create_contacts_idle_cb),
+	(remove_contacts_idle_cb):
+
+2009-05-18  Marco Barisione <marco.barisione@maemo.org>
+
+	Release 0.4.30
+
+2009-05-18  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Fix some memory leaks.
+
+	* src/e-book-backend-tp.c (delete_contacts),
+	(_sync_phase_3_idle_cb), (remove_contact),
+	(remove_contacts_idle_cb):
+
+2009-05-18  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Travis Reitter
+
+	Handle failures to add contacts because of a malformed JID in a
+	different way from other errors so that the addressbook can still add
+	the contact.
+
+	* src/e-book-backend-tp.c (create_contact),
+	(create_contact_idle_cb), (create_contacts_idle_cb):
+	If adding a contact fails because the JID is invalid return
+	InvalidField instead of Other Error.
+
+2009-05-18  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Don't check for the size of the hash table of contacts that need to be
+	updated as it's a useless optimization.
+
+	* src/e-book-backend-tp.c (update_contacts_idle_cb),
+	(delete_contacts):
+
+2009-05-18  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	When removing a contact be sure to remove it from the hash table of
+	contacts needing an update. If we don't do this we will send the vcard
+	of the contact to the views after the deletion so they will
+	think that the contact was added again.
+
+	* src/e-book-backend-tp.c (update_contacts_idle_cb),
+	(delete_contacts):
+
+2009-05-14  Marco Barisione <marco.barisione@maemo.org>
+
+	Release 0.4.29
+
+2009-05-14  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Robert Peto
+
+	We were leaking the backend in the backend functions to create new
+	contacts or to modify them. According to comments this was done on
+	purpose to avoid some EDS bugs, but the bug doesn't seem to exist
+	anymore so remove the hack.
+
+	* src/e-book-backend-tp.c (modify_contact_idle_cb),
+	(create_contact_idle_cb), (create_contacts_idle_cb): Don't leak the
+	backend.
+
+2009-05-13  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	If a contact doesn't have any alias set then the connection manager
+	will use the contact ID as alias. In this case don't set the NICKNAME
+	vcard field.
+
+	* src/e-book-backend-tp-contact.c
+	(e_book_backend_tp_contact_to_econtact):
+
+2009-05-13  Jonathon Jongsma  <jonathon.jongsma@maemo.org>
+
+	Reviewed by: Marco Barisione
+
+	* src/e-book-backend-tp-cl.c:
+	(e_book_backend_tp_cl_remove_contact): Fix a leak by getting rid of
+	a couple extra refs that were forgotten when the referencing
+	strategy was changed a couple of commits back
+
+2009-05-13  Tan Miaoqing <miaoqing.tan@nokia.com>
+
+	reviewed by: Marco Barisione
+
+	Handle vcard parameters like type=home received from the ContactInfo
+	interface.
+
+	* src/e-book-backend-tp-cl.c (attribute_add_param_foreach_cb),
+	(contact_info_attribute_add_params), (contact_info_to_vcard_str):
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.28
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Reference the contacts that we are inspecting as they could be removed
+	from the contacts hash table (and thus unreffed) before the inspection
+	is completed.
+
+	* src/e-book-backend-tp-cl.c (free_contacts_array),
+	(update_changed_members), (remove_handles_from_array),
+	(tp_channel_members_changed_cb):
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Make the remove_handles_from_array function more readable.
+
+	* src/e-book-backend-tp-cl.c (remove_handles_from_array):
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Add a missing argument to a WARNING() call.
+
+	* src/e-book-backend-tp-cl.c (members_changed_with_details_cb):
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Mathias Hasselmann
+
+	The data fetched from the master UIDs table was assumed to be ordered
+	by contact ID while it was not so some master UIDs were ignored.
+
+	* src/e-book-backend-tp-db.c:
+
+2009-05-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	The inspection of some Telepathy handles can fail, for instance
+	because the contacts were removed from the roster in the meantime.
+	Handle this case and avoid emitting signals with invalid contacts.
+
+	* src/e-book-backend-tp-cl.c (remove_handles_from_array),
+	(members_changed_with_details_cb), (get_contacts_cb):
+
+2009-05-07  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.27.
+
+2009-05-07  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Don't use a potentially already freed contact object.
+
+	* src/e-book-backend-tp-cl.c (e_book_backend_tp_cl_remove_contact):
+
+2009-05-07  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Fix a crash when the contact list is freed just before the channel is
+	ready.
+
+	* src/e-book-backend-tp-cl.c (tp_channel_ready_cb),
+	(tp_request_channel_cb): Reference the EBookBackendTpCl before passing
+	it in the user data argument to tp_channel_call_when_ready.
+
+2009-05-05  Jonathon Jongsma  <jonathon@quotidian.org>
+
+	Reviewed by: Marco Barisione, Travis Reitter
+
+	* src/e-book-backend-tp-cl.c:
+	(connection_status_changed_cb): Free the contact lists and the
+	connection when the connection is disconnected so that we don't leak
+	memory.
+	(e_book_backend_tp_cl_go_offline):
+	(e_book_backend_tp_cl_set_status): remove our handle->contact hash
+	when we go offline since handles are only valid while we're online
+	* src/e-book-backend-tp.c:
+	(tp_cl_get_members_cb):
+	(tp_cl_status_changed_cb): empty the handle_to_contact hash when we
+	go offline rather than when we come online
+	Fixes NB#112412
+
+2009-05-05  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.26.
+
+2009-05-05  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	It's possible to have no views at some point, so don't generated the
+	vcard updates if there is nobody receiving them.
+
+	* src/e-book-backend-tp.c (notify_remotely_updated_contacts),
+	(notify_updated_contact):
+
+2009-05-01  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Jonathon Jongsma
+
+	Set the status message to a null string and the presence to unknown
+	for all the contacts if we are offline instead of using the previous
+	status message and setting the presence to offline.
+
+	* src/e-book-backend-tp-cl.c
+	(e_book_backend_tp_cl_set_all_contacts_offline):
+	* src/e-book-backend-tp-contact.c (e_book_backend_tp_contact_new):
+
+2009-04-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	reviewed by: Travis Reitter
+
+	Fix a memory leak.
+
+	* src/e-book-backend-tp.c (e_book_backend_tp_dispose):
+
+2009-04-23  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.25.
+
+2009-04-20  Jonathon Jongsma  <jonathon.jongsma@maemo.org>
+
+	* src/e-book-backend-tp.c (remove_idle_cb): dont' call
+	  e_book_backend_tp_db_close() again since
+	  e_book_backend_tp_delete() already closes the db
+
+2009-04-15  Marco Barisione  <marco.barisione@maemo.org>
+
+	Do not use tp_cli_connection_interface_avatars_run_request_avatars as
+	it runs its own mainloop causing the execution of various idle
+	callbacks when we don't expect it.
+
+	* src/e-book-backend-tp-cl.c:
+	(e_book_backend_tp_cl_request_avatar_data):
+
+2009-04-13  Jonathon Jongsma  <jonathon.jongsma@maemo.org>
+
+	* src/e-book-backend-tp-db.c: (e_book-backend_tp_db_cleanup_unused_dbs)
+	fix a memory leak on an early return
+
+2009-04-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	Change the name of the log domain variable so it's not the same in
+	different modules.
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_to_econtact):
+	* src/e-book-backend-tp-factory.c: (eds_module_initialize):
+	* src/e-book-backend-tp-log.c:
+	* src/e-book-backend-tp-log.h:
+	* src/e-book-backend-tp.c: (modify_contact_idle_cb):
+
+2009-04-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	Remove debug messages for every ref/unref of a contact.
+
+	* src/e-book-backend-tp-contact.c: (e_book_backend_tp_contact_ref),
+	(e_book_backend_tp_contact_unref):
+
+2009-04-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix a typo in a debug message.
+
+	* src/e-book-backend-tp-cl.c: (avatar_updated_cb):
+
+2009-04-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.24.
+
+2009-04-07  Marco Barisione  <marco.barisione@maemo.org>
+
+	The wrong hash table was used to store the list of contacts for which
+	we received a notification of change from the server, so everything
+	was working just by chance.
+	Notify of change only the contacts that really changed on the server
+	and not every contact.
+
+	* src/e-book-backend-tp.c: (notify_remotely_updated_contacts),
+	(request_db_update_remotely_updated_contacts), (update_contacts):
+
+2009-04-07  Marco Barisione  <marco.barisione@maemo.org>
+
+	Use the new logging functions in EDS, so we can decrease the default
+	verbosity.
+
+	* src/Makefile.am:
+	* src/e-book-backend-tp-cl.c: (update_contact_details),
+	(members_changed_with_details_cb), (tp_channel_members_changed_cb),
+	(tp_channel_ready_cb), (tp_request_channel_cb),
+	(request_handles_for_contact_list_cb), (aliases_changed_cb),
+	(avatar_retrieved_cb), (avatar_updated_cb), (presences_changed_cb),
+	(tp_connection_ready_cb), (_setup_tp_connection),
+	(connection_status_changed_cb), (account_ready_cb),
+	(e_book_backend_tp_cl_load), (e_book_backend_tp_cl_set_status),
+	(update_capabilities), (capabilities_changed_cb),
+	(get_capabilities_for_members_cb), (contact_info_changed_cb),
+	(get_contact_info_for_members_cb), (get_contacts_cb),
+	(channel_get_all_members_cb), (get_next_channel_members),
+	(e_book_backend_tp_cl_update_flags),
+	(e_book_backend_tp_cl_update_alias),
+	(e_book_backend_tp_cl_add_contact),
+	(e_book_backend_tp_cl_remove_contact),
+	(e_book_backend_tp_cl_request_avatar_data),
+	(tp_cl_remove_members_cb):
+	* src/e-book-backend-tp-contact.c: (e_book_backend_tp_contact_ref),
+	(e_book_backend_tp_contact_unref),
+	(e_book_backend_tp_contact_to_econtact),
+	(e_book_backend_tp_contact_update_tp_attribute),
+	(e_book_backend_tp_contact_update_from_econtact),
+	(e_book_backend_tp_contact_update_master_uids):
+	* src/e-book-backend-tp-db.c: (create_tables),
+	(prepare_statements), (manager_ready_cb),
+	(e_book_backend_tp_db_cleanup_unused_dbs),
+	(e_book_backend_tp_db_open_real), (e_book_backend_tp_db_open),
+	(e_book_backend_tp_db_close), (e_book_backend_tp_db_real_begin),
+	(e_book_backend_tp_db_real_commit),
+	(e_book_backend_tp_db_real_rollback),
+	(e_book_backend_tp_db_fetch_contacts),
+	(e_book_backend_tp_db_add_master_uids),
+	(e_book_backend_tp_db_real_add_contact),
+	(e_book_backend_tp_db_delete_master_uids),
+	(e_book_backend_tp_db_real_update_contact),
+	(e_book_backend_tp_db_real_delete_contact):
+	* src/e-book-backend-tp-factory.c: (eds_module_initialize):
+	* src/e-book-backend-tp-log.c:
+	* src/e-book-backend-tp-log.h:
+	* src/e-book-backend-tp.c: (notify_remotely_updated_contacts),
+	(notify_updated_contact), (flush_db_updates),
+	(db_update_timeout_cb), (request_db_update),
+	(request_db_update_remotely_updated_contacts), (update_contacts),
+	(delete_contacts), (tp_cl_aliases_changed_cb),
+	(tp_cl_presence_changed_cb), (tp_cl_flags_changed),
+	(tp_cl_contacts_added), (tp_cl_contacts_removed),
+	(tp_cl_avatar_tokens_changed_cb), (avatar_data_saved_cb),
+	(tp_cl_avatar_data_changed_cb), (tp_cl_capabilities_changed_cb),
+	(tp_cl_contact_info_changed_cb), (update_contact),
+	(_sync_phase_3_idle_cb), (_sync_phase_2_idle_cb),
+	(tp_cl_get_members_cb), (_sync_phase_1), (tp_cl_status_changed_cb),
+	(tp_ready_cb), (_sync_phase_0_idle_cb), (account_compat_ready_cb),
+	(load_source_idle_cb), (e_book_backend_tp_load_source),
+	(notify_all_contacts_updated_for_view),
+	(notify_all_contacts_updated), (book_view_tp_members_ready_cb),
+	(start_book_view_idle_cb), (e_book_backend_tp_init),
+	(modify_contact_idle_cb), (create_contact), (remove_contact),
+	(remove_contacts_idle_cb), (unsupported_method),
+	(get_contact_idle_cb), (get_contact_list_idle_cb),
+	(remove_idle_cb):
+
+2009-04-02  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.23.
+
+2009-04-02  Marco Barisione  <marco.barisione@maemo.org>
+
+	When notifying the views of some changes do not generate an EContact
+	per view but one for all of them.
+
+	* src/e-book-backend-tp.c: (notify_remotely_updated_contacts),
+	(notify_updated_contact):
+
+2009-04-02  Marco Barisione  <marco.barisione@maemo.org>
+
+	When the backend receive a signal from the contact list because
+	something like the alias or the presence changed, don't notify the
+	views immediately but delay it to an idle callback.
+	This way we avoid starving the main loop and we avoid notifying the
+	views multiple times if the signals arrive in sequence.
+
+	* src/e-book-backend-tp.c: (notify_remotely_updated_contacts),
+	(request_db_update_remotely_updated_contacts),
+	(update_contacts_idle_cb), (update_contacts),
+	(e_book_backend_tp_dispose), (e_book_backend_tp_init):
+
+2009-04-02  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't report a disk full error if there are more then 8 MB of disk
+	space, even if it's less than the 3% threshold. This makes testing in
+	scratchbox easier if you are running low on disk space.
+
+	* src/e-book-backend-tp.c: (check_available_disk_space):
+
+2009-04-02  Marco Barisione  <marco.barisione@maemo.org>
+
+	Add the profile name to the vcards of the tp contacts (for instance
+	X-JABBER;TYPE=jabber:a@b.com) so we can show the correct icon in the
+	address book even after the deletion of the corresponding chat
+	account.
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_to_econtact):
+	* src/e-book-backend-tp-contact.h:
+	* src/e-book-backend-tp.c: (notify_updated_contacts),
+	(notify_updated_contact), (account_compat_ready_cb),
+	(notify_all_contacts_updated_for_view), (modify_contact_idle_cb),
+	(create_contact_idle_cb), (create_contacts_idle_cb),
+	(get_contact_idle_cb), (get_contact_list_idle_cb):
+
+2009-03-31  Marco Barisione  <marco.barisione@maemo.org>
+
+	Free a variable before assigning a new value to it. This should not
+	happen in a real situation but coverity detects it as a possible
+	error.
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_update_from_econtact):
+
+2009-03-31  Marco Barisione  <marco.barisione@maemo.org>
+
+	Avoid notifying the views multiple times for updated contacts.
+
+	* src/e-book-backend-tp.c: (notify_all_contacts_updated_for_view),
+	(notify_all_contacts_updated), (book_view_tp_members_ready_cb),
+	(start_book_view_idle_cb):
+
+2009-03-30  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.22.
+
+2009-03-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't do anything when an account is deleted. Other components will
+	take care of it and of removing the corresponding book.
+
+	* src/e-book-backend-tp.c: (load_source_idle_cb),
+	(e_book_backend_tp_dispose):
+
+2009-03-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix some more warnings.
+
+	* src/e-book-backend-tp-db.c:
+	* src/test-tpcl.c: (contact_info_changed_cb):
+
+2009-03-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.21.
+
+2009-03-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Do not include a deprecated libmcclient header, what we need has been
+	moved to a header we already include.
+
+	* src/e-book-backend-tp.c:
+
+2009-03-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix a memory leak.
+
+	* src/e-book-backend-tp.c: (create_contacts_idle_cb):
+
+2009-03-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Remove a debug check left by mistake.
+
+	* src/e-book-backend-tp.c: (e_book_backend_tp_finalize):
+
+2009-03-17  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't set the "FN" field unless it comes from ContactInfo.
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_to_econtact):
+
+2009-03-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.20
+
+2009-03-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	Add librtcom-telepathy-glib as a build dependency.
+
+	* debian/control:
+
+2009-03-15  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.19
+
+2009-03-15  Marco Barisione  <marco.barisione@maemo.org>
+
+	If the cache DB cannot be opened throw it away and retry.
+
+	* src/e-book-backend-tp-db.c: (e_book_backend_tp_db_open_real),
+	(e_book_backend_tp_db_open):
+
+2009-03-13  Marco Barisione  <marco.barisione@maemo.org>
+
+	Be sure to keep the backend alive in between a call to
+	e_book_backend_tp_cl_get_members and the callback being called.
+
+	* src/e-book-backend-tp.c: (tp_cl_get_members_cb), (_sync_phase_1):
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't try freeing a GSList of EContacts with g_object_unref.
+
+	* src/e-book-backend-tp.c: (create_contacts_idle_cb):
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Loading books must be sync, but Telepathy doesn't allow us to do this
+	so if error happens they are not reported back in the usual way to the
+	application that tried to open the book.
+	Add checks that make all the backend methods fail cleanly if a book in
+	this condition is used.
+
+	* src/e-book-backend-tp.c: (account_compat_ready_cb),
+	(start_book_view_idle_cb), (stop_book_view_idle_cb),
+	(modify_contact_idle_cb), (create_contact_idle_cb),
+	(create_contacts_idle_cb), (remove_contacts_idle_cb):
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't pass to a g_critical an McAccount object but its name.
+
+	* src/e-book-backend-tp.c: (account_compat_ready_cb):
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Add support for the ContactInfo Telepathy interface.
+
+	* configure.ac:
+	* src/Makefile.am:
+	* src/e-book-backend-tp-cl.c: (e_book_backend_tp_cl_class_init),
+	(update_contact_details), (tp_channel_members_changed_cb),
+	(tp_connection_ready_cb), (contact_info_to_vcard_str),
+	(contact_info_changed_cb), (get_contact_info_for_members_cb),
+	(get_next_channel_members):
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_free), (e_book_backend_tp_contact_dup),
+	(e_book_backend_tp_merge_vcard_with_contact_info),
+	(e_book_backend_tp_contact_to_econtact):
+	* src/e-book-backend-tp-contact.h:
+	* src/e-book-backend-tp-db.c:
+	(e_book_backend_tp_db_fetch_contacts),
+	(bind_add_update_contact_query):
+	* src/e-book-backend-tp.c: (tp_cl_contact_info_changed_cb),
+	(tp_cl_get_members_cb), (tp_ready_cb):
+	* src/test-tpcl.c: (contact_info_changed_cb), (main):
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.18
+
+2009-03-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	The check in the previous commit was inverted, so only accounts with
+	roster support were loaded. Invert the check and avoid loading
+	accounts that don't support rosters.
+
+	* src/e-book-backend-tp.c: (account_compat_ready_cb):
+
+2009-03-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't load accounts that don't support rosters.
+
+	* src/e-book-backend-tp.c: (account_compat_ready_cb):
+
+2009-03-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't pass a G_TYPE_INT to a marshaller expecting an enum.
+
+	* src/e-book-backend-tp-cl.c: (e_book_backend_tp_cl_class_init):
+
+2009-03-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix various memory leaks.
+
+	* src/e-book-backend-tp-cl.c: (update_contact_details),
+	(get_next_channel_members):
+	* src/e-book-backend-tp-contact.c: (e_book_backend_tp_contact_dup):
+	* src/e-book-backend-tp.c: (tp_cl_avatar_tokens_changed_cb),
+	(_sync_phase_0_idle_cb), (account_invalidated_cb),
+	(e_book_backend_tp_dispose), (e_book_backend_tp_finalize),
+	(remove_idle_cb):
+
+2009-03-09  Marco Barisione  <marco.barisione@maemo.org>
+
+	If a contact's avatar token is NULL (for instance because the contact
+	is offline) then use the one cached in the DB.
+
+	* src/e-book-backend-tp.c: (tp_cl_avatar_tokens_changed_cb):
+
+2009-03-09  Marco Barisione  <marco.barisione@maemo.org>
+
+	Print also the avatar token in update_contact_details for debugging
+	purposes.
+
+	* src/e-book-backend-tp-cl.c: (update_contact_details):
+
+2009-03-06  Marco Barisione  <marco.barisione@maemo.org>
+
+	Check if there is available disk space before doing operations that
+	could modify the DB.
+
+	* src/e-book-backend-tp.c: (check_available_disk_space),
+	(modify_contact_idle_cb), (create_contact_idle_cb),
+	(create_contacts_idle_cb), (remove_contacts_idle_cb):
+
+2009-03-05  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.17
+
+2009-03-04  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't crash if the avatar token is still NULL.
+
+	* src/e-book-backend-tp.c: (tp_cl_avatar_tokens_changed_cb):
+
+2009-03-03  Marco Barisione  <marco.barisione@maemo.org>
+
+	Do not request the avatar if the avatar token is empty.
+
+	* src/e-book-backend-tp.c: (tp_cl_avatar_tokens_changed_cb):
+
+2009-03-03  Marco Barisione  <marco.barisione@maemo.org>
+
+	Do not set the PHOTO field in the vcard if there is no avatar
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_to_econtact):
+
+2009-02-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	Use g_warning instead of g_critical if we fail to connect to some
+	signals because the CM doesn't implement the interface.
+
+	* src/e-book-backend-tp-cl.c: (tp_channel_ready_cb),
+	(tp_connection_ready_cb):
+
+2009-02-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	Print the error message if mc_account_call_when_ready fails.
+
+	* src/e-book-backend-tp-cl.c: (account_ready_cb):
+
+2009-02-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	Avoid the destruction of the contact list in between the call to
+	tp_connection_call_when_ready and the callback being called.
+
+	* src/e-book-backend-tp-cl.c: (tp_connection_ready_cb),
+	(_setup_tp_connection):
+
+2009-02-26  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.16
+
+2009-02-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	If the creation of a new EBookBackendTpContact fails (for instance
+	because the JID is invalid) don't try to unref it.
+
+	* src/e-book-backend-tp.c: (create_contact_idle_cb):
+
+2009-02-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	When reusing an existing EBookBackendTpContact increase its ref count.
+
+	* src/e-book-backend-tp.c: (create_contact):
+
+2009-02-19  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.15
+
+2009-02-17  Marco Barisione  <marco.barisione@maemo.org>
+
+	Set the GError argument if e_book_backend_tp_db_delete fails to remove
+	the database file.
+
+	* src/e-book-backend-tp-db.c: (e_book_backend_tp_db_delete):
+
+2009-02-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	If the alias is not set leave the "FN" vcard field empty instead of
+	setting it to the contact ID.
+
+	* src/e-book-backend-tp-contact.c:
+	(e_book_backend_tp_contact_to_econtact):
+
+2009-02-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix various compiler warnings.
+
+	* src/e-book-backend-tp-cl.c: (update_contact_details),
+	(update_changed_members), (tp_channel_members_changed_cb),
+	(tp_request_channel_cb), (update_capabilities),
+	(capabilities_changed_cb), (get_capabilities_for_members_cb),
+	(channel_get_all_members_cb),
+	(e_book_backend_tp_cl_request_avatar_data):
+	* src/e-book-backend-tp-contact.c: (master_uids_differ),
+	(master_uids_find), (e_book_backend_tp_contact_dup),
+	(e_book_backend_tp_contact_to_econtact),
+	(e_book_backend_tp_contact_update_master_uids):
+	* src/e-book-backend-tp-db.c: (prepare_statements),
+	(e_book_backend_tp_db_close),
+	(e_book_backend_tp_db_fetch_contacts),
+	(e_book_backend_tp_db_add_master_uids),
+	(e_book_backend_tp_db_add_contacts),
+	(e_book_backend_tp_db_update_contacts),
+	(e_book_backend_tp_db_remove_contacts):
+	* src/e-book-backend-tp.c: (notify_updated_contacts),
+	(request_db_update_many), (delete_contacts),
+	(tp_cl_aliases_changed_cb), (tp_cl_presence_changed_cb),
+	(tp_cl_flags_changed), (tp_cl_contacts_added),
+	(tp_cl_contacts_removed), (tp_cl_avatar_tokens_changed_cb),
+	(tp_cl_capabilities_changed_cb), (tp_cl_get_members_cb),
+	(_sync_phase_0_idle_cb), (account_compat_ready_cb):
+	* src/test-tpcl.c: (contact_list_get_members_cb),
+	(contacts_added_cb), (aliases_changed_cb), (presences_changed_cb):
+
+2009-02-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't unref twice the hash table containing the contacts to delete.
+
+	* src/e-book-backend-tp.c: (e_book_backend_tp_dispose):
+
+2009-02-16  Marco Barisione  <marco.barisione@maemo.org>
+
+	Avoid calling telepathy-glib functions on 0 contacts to avoid critical
+	warnings.
+
+	* src/e-book-backend-tp-cl.c: (get_next_channel_members):
+
+2009-02-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix some memory-related problems found by coverity.
+
+	* src/e-book-backend-tp-cl.c: (tp_request_channel_cb):
+	* src/e-book-backend-tp.c: (get_contact_idle_cb):
+	* src/test-tpcl.c: (avatar_changed_cb):
+
+2009-02-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Simplify the loading code and avoid executing the same code multiple
+	times if the same account source is loaded more than once.
+
+	* src/e-book-backend-tp.c: (_sync_phase_0_idle_cb),
+	(account_compat_ready_cb), (load_source_idle_cb),
+	(e_book_backend_tp_load_source):
+
+2009-02-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.14.
+
+2009-02-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Various small build fixes.
+
+	* src/Makefile.am: Add missing files.
+	* test/Makefile.am: Use $(top_srcdir) instead of $(top_builddir) for
+	the CPPFLAGS.
+	* test/add-contacts.c: (main): Use libmcclient.
+	* test/change-aliases.c: (main): Ditto.
+	* test/remove-contacts.c: (main): Ditto.
+
+2009-02-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Add some critical warnings to verify that some code is really dead
+	code as it seems before removing it.
+
+	* src/e-book-backend-tp.c: (_sync_phase_0_idle_cb),
+	(_load_source_idle_cb), (e_book_backend_tp_load_source):
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Remove a ";" after an if.
+
+	* src/e-book-backend-tp.c: (_load_source_idle_cb):
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Check more error conditions when loading data and don't leak GErrors.
+
+	* src/e-book-backend-tp.c: (_load_source_idle_cb):
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Make e_book_backend_tp_cl_load return a gboolean instead of void.
+
+	* src/e-book-backend-tp-cl.c: (e_book_backend_tp_cl_load):
+	* src/e-book-backend-tp-cl.h:
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Always check that error is not null before using error->message.
+
+	* src/e-book-backend-tp-cl.c: (tp_request_channel_cb),
+	(_setup_tp_connection), (e_book_backend_tp_cl_update_flags),
+	(e_book_backend_tp_cl_update_alias),
+	(e_book_backend_tp_cl_add_contact),
+	(e_book_backend_tp_cl_remove_contact):
+	* src/e-book-backend-tp.c: (flush_db_updates),
+	(tp_cl_contacts_added), (avatar_data_saved_cb), (update_contact),
+	(_sync_phase_3_idle_cb), (_sync_phase_1), (account_invalidated_cb),
+	(modify_contact_idle_cb), (create_contact), (remove_contact),
+	(remove_contacts_idle_cb), (remove_idle_cb):
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Use e_book_backend_tp_return_val_with_error_if_fail where possible
+
+	* src/e-book-backend-tp-db.c: (e_book_backend_tp_db_delete),
+	(e_book_backend_tp_db_fetch_contacts),
+	(e_book_backend_tp_db_add_master_uids),
+	(e_book_backend_tp_db_real_add_contact),
+	(e_book_backend_tp_db_add_contact),
+	(e_book_backend_tp_db_delete_master_uids),
+	(e_book_backend_tp_db_real_update_contact),
+	(e_book_backend_tp_db_update_contact),
+	(e_book_backend_tp_db_real_delete_contact),
+	(e_book_backend_tp_db_delete_contact),
+	(e_book_backend_tp_db_add_contacts),
+	(e_book_backend_tp_db_update_contacts),
+	(e_book_backend_tp_db_remove_contacts):
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Add e_book_backend_tp_return_val_with_error_if_fail to avoid returning
+	with a g_return_val_if_fail without setting the error.
+
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp-types.c: Added file
+	* src/Makefile.am:
+
+2009-02-10  Marco Barisione  <marco.barisione@maemo.org>
+
+	Unref and set to null the EBookBackendTpDb referenced by
+	EBookBackendTp when the on-disk database is removed.
+	Don't crash or emit critical warnings when the database has been
+	deleted.
+
+	* src/e-book-backend-tp.c: (flush_db_updates), (delete_contacts),
+	(tp_cl_contacts_added), (_sync_phase_3_idle_cb),
+	(_sync_phase_2_idle_cb), (_sync_phase_0_idle_cb),
+	(_load_source_idle_cb), (account_invalidated_cb),
+	(e_book_backend_tp_dispose), (modify_contact_idle_cb),
+	(create_contact), (remove_contacts_idle_cb), (remove_idle_cb):
+
+2009-02-06  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't call mission control methods for the EDS thread.
+
+	* src/e-book-backend-tp.c: (load_source_idle_cb),
+	(e_book_backend_tp_load_source):
+
+2009-02-05  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.13.
+
+2009-02-01  Marco Barisione  <marco.barisione@maemo.org>
+
+	Remove all the contacts and the database when an account is removed.
+
+	* src/e-book-backend-tp.c: (account_invalidated_cb),
+	(e_book_backend_tp_load_source), (e_book_backend_tp_dispose):
+
+2009-02-01  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Add information about atomic master UID operations to README file.
+
+	* README: See summary.
+
+2009-02-01  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Implement atomic removal of master UIDs.
+
+	* src/e-book-backend-tp-contact.c:
+	* src/e-book-backend-tp-contact.h:
+	  Introduce e_book_backend_tp_contact_remove_master_uid().
+
+	* src/e-book-backend-tp.c
+	 (remove_contact(), remove_contacts_idle_cb()):
+	  Extract remove_contact() from remove_contacts_idle_cb() and
+	  implement atomic removal of master UIDs.
+
+2009-01-30  Marco Barisione  <marco.barisione@maemo.org>
+
+	Remove the DBs for deleted accounts at startup.
+
+	* src/e-book-backend-tp-db.c: (get_db_directory),
+	(db_filename_for_account), (remove_accounts_from_hash_table),
+	(manager_ready_cb), (e_book_backend_tp_db_cleanup_unused_dbs),
+	(e_book_backend_tp_db_open): Add
+	e_book_backend_tp_db_cleanup_unused_dbs to remove unused DBs.
+	* src/e-book-backend-tp-db.h: Ditto.
+	* src/e-book-backend-tp-factory.c: (clean_unused_dbs_timout_cb),
+	(eds_module_initialize): Cleanup the unused DBs at startup.
+
+2009-01-29  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.12.
+
+2009-01-29  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Properly set flags when creating new roster contacts.
+
+	* src/e-book-backend-tp.c (create_contact()): Add KNOWN to
+	  pending_flags. Don't remove SCHEDULE_ADD to make sure that
+	  master uids are stored.
+
+2009-01-29  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Fix some segfault caused by update_contact() refactoring.
+
+	* src/e-book-backend-tp.c (_sync_phase_3_idle_cb()):
+	  Initialize contacts variable.
+
+2009-01-29  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Update master UID list when adding duplicate contacts to prevent lost
+	updates when linking new master contacts. Needed for NB#93982. This
+	special behaviour was aggreed long ago, but got lost somehow.
+
+	* src/e-book-backend-tp-contact.h
+	 (e_book_backend_tp_contact_update_master_uids()):
+	* src/e-book-backend-tp-contact.c (master_uids_find(),
+	  e_book_backend_tp_contact_update_master_uids()):
+	  Introduce e_book_backend_tp_contact_update_master_uids().
+
+	* src/e-book-backend-tp.c (create_contact()): See summary.
+
+2009-01-29  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Try to make e-book-backend-tp-contact.h somewhat readable.
+
+	* src/e-book-backend-tp-contact.h: Reformat declarations.
+
+2009-01-29  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Extract update_contact() function from _sync_phase_3_idle_cb().
+
+	* src/e-book-backend-tp.c
+	 (update_contact(), _sync_phase_3_idle_cb()): See summary.
+
+2009-01-28  Marco Barisione  <marco.barisione@maemo.org>
+
+	Release 0.4.11.
+
+2009-01-27  Marco Barisione  <marco.barisione@maemo.org>
+
+	Implement the backend function called by e_book_add_contacts.
+
+	* src/e-book-backend-tp.c: (create_contact),
+	(create_contact_idle_cb), (e_book_backend_tp_create_contact),
+	(create_contacts_idle_cb), (e_book_backend_tp_create_contacts),
+	(e_book_backend_tp_class_init):
+
+2009-01-26  Travis Reitter  <travis.reitter@maemo.org>
+
+	Bump the version number for the last release and fix the date on my last
+	change in the ChangeLog (again - whoops).
+
+	* ChangeLog
+	* configure.ac
+
+2009-01-26  Travis Reitter  <travis.reitter@maemo.org>
+
+	Send contacts along to front-end as soon as they're ready from the database
+	so that offline accounts still list contacts based on their last-known
+	state; Fixes: NB#97708.
+
+	* src/e-book-backend-tp.c
+	* src/e-book-backend-tp.h
+
+2009-01-15  Travis Reitter  <travis.reitter@maemo.org>
+
+	Bump the version number for the last release and fix the date on my last
+	change in the ChangeLog.
+
+	* ChangeLog
+	* configure.ac
+
+2009-01-15  Travis Reitter  <travis.reitter@maemo.org>
+
+	Fix a race condition between start_book_view_idle_cb() and
+	tp_cl_get_members_cb() which can lead to contacts being sent before they are
+	completely ready.
+
+	* src/e-book-backend-tp.c
+	* src/e-book-backend-tp.h
+
+2009-01-15  Marco Barisione  <marco.barisione@maemo.org>
+
+	Disconnect signal handlers when disposing EBookBackendTp.
+
+	* src/e-book-backend-tp.c: (e_book_backend_tp_dispose):
+
+2009-01-15  Marco Barisione  <marco.barisione@maemo.org>
+
+	Keep a reference to the backend when loading a contact list to avoid
+	it being destroyed while we are using it.
+
+	* src/e-book-backend-tp.c: (_sync_phase_0_idle_cb),
+	(account_compat_ready_cb), (e_book_backend_tp_dispose):
+
+2009-01-13  Marco Barisione  <marco.barisione@maemo.org>
+
+	Refactor some code to avoid adding idle callbacks when they are not
+	needed.
+
+	* src/e-book-backend-tp-cl.c: (handle_members_changed_idle_cb),
+	(tp_channel_members_changed_cb):
+
+2009-01-13  Marco Barisione  <marco.barisione@maemo.org>
+
+	Make sure to emit signals notifying changes in the contact list only
+	when the name has been retrieved.
+
+	* src/e-book-backend-tp-cl.c: (presence_code_to_string),
+	(update_contact_details), (update_changed_members),
+	(members_changed_with_details_cb),
+	(handle_members_changed_idle_cb), (get_contacts_cb):
+
+2009-01-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Use the new TpContact API to reduce the number of roundtrips and make
+	also the code clearer/cleaner.
+
+	* src/e-book-backend-tp-cl.c: (handle_members_changed_idle_cb),
+	(get_contacts_cb), (channel_get_all_members_cb),
+	(get_next_channel_members):
+	* src/e-book-backend-tp.c: (tp_cl_avatar_tokens_changed_cb),
+	(tp_cl_capabilities_changed_cb):
+
+2009-01-12  Marco Barisione  <marco.barisione@maemo.org>
+
+	Use libbmcclient instead of the now deprecated libmissioncontrol.
+
+	* configure.ac:
+	* debian/control:
+	* src/e-book-backend-tp-cl.c: (e_book_backend_tp_cl_finalize),
+	(_setup_tp_connection), (connection_status_changed_cb),
+	(account_ready_cb), (e_book_backend_tp_cl_load):
+	* src/e-book-backend-tp-cl.h:
+	* src/e-book-backend-tp-contact.h:
+	* src/e-book-backend-tp-types.h:
+	* src/e-book-backend-tp.c: (e_book_backend_tp_generate_uid),
+	(_load_source_idle_cb), (account_compat_ready_cb),
+	(e_book_backend_tp_load_source):
+	* src/test-tpcl.c: (main):
+
+2009-01-09  Marco Barisione  <marco.barisione@maemo.org>
+
+	Implement the backend function called by e_book_remove().
+
+	* src/e-book-backend-tp.c: (remove_idle_cb),
+	(e_book_backend_tp_remove): Implement e_book_remove
+	* src/e-book-backend-tp-db.h: Add e_book_backend_tp_db_delete().
+	* src/e-book-backend-tp-db.c: (e_book_backend_tp_db_finalize),
+	(e_book_backend_tp_db_open), (e_book_backend_tp_db_delete),
+	(e_book_backend_tp_db_real_begin),
+	(e_book_backend_tp_db_real_commit),
+	(e_book_backend_tp_db_real_rollback),
+	(e_book_backend_tp_db_fetch_contacts),
+	(e_book_backend_tp_db_add_master_uids),
+	(e_book_backend_tp_db_real_add_contact),
+	(e_book_backend_tp_db_add_contact),
+	(e_book_backend_tp_db_delete_master_uids),
+	(e_book_backend_tp_db_real_update_contact),
+	(e_book_backend_tp_db_update_contact),
+	(e_book_backend_tp_db_real_delete_contact),
+	(e_book_backend_tp_db_delete_contact),
+	(e_book_backend_tp_db_add_contacts),
+	(e_book_backend_tp_db_update_contacts),
+	(e_book_backend_tp_db_remove_contacts): Add
+	e_book_backend_tp_db_delete() and avoid crashes when EBookBackendTpDb
+	is used after the DB was deleted.
+
+2009-01-08  Marco Barisione  <marco.barisione@maemo.org>
+
+	Don't require a precise version of libmissioncontrol as newer ones are
+	working too.
+	This is just a temporary fix waiting the switch to libmcclient.
+
+	* configure.ac:
+
+2009-01-08  Marco Barisione  <marco@barisione.org>
+
+	Don't show contacts as still online when we are disconnected from an
+	account.
+
+	* src/e-book-backend-tp-cl.c:
+	(e_book_backend_tp_cl_set_all_contacts_offline),
+	(e_book_backend_tp_cl_set_status): Set the status of the
+	EBookBackendTpContacts as offline when we get disconnected.
+
+2009-01-06  Travis Reitter  <travis.reitter@maemo.org>
+
+	Add a note about the odd syntax in the static array declaration.
+
+	* src/e-book-backend-tp-db.c
+
+2009-01-06  Travis Reitter  <travis.reitter@maemo.org>
+
+	Update and notify when contacts avatars change from one image to another,
+	pre-existing image.
+
+	* src/e-book-backend-tp.c
+
+2008-12-29  Marco Barisione  <marco.barisione@maemo.org>
+
+	* src/test-tpcl.c: (main): If available use the account name passed on
+	the command line instead of the hard coded one.
+
+2008-12-18  Marco Barisione  <marco.barisione@maemo.org>
+
+	Fix some build warnings.
+
+	* src/e-book-backend-tp.c: (get_contact_idle_cb),
+	(e_book_backend_tp_get_contact), (get_contact_list_idle_cb),
+	(e_book_backend_tp_get_contact_list): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Release eds-backend-telepathy 4.20081217.
+
+	* configure.ac:
+	* debian/changelog: Update versions.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Also implement virtual get_contact() function.
+
+	* src/e-book-backend-tp.c (GetContactClosure, get_contact_idle_cb(),
+	  e_book_backend_tp_get_changes()): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Make get_contact_list() really work.
+
+	* src/e-book-backend-tp.c (get_contact_list_idle_cb()):
+	  Fix some pre-condition check and some double free.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Remove another unbalanced transaction.
+
+	* src/e-book-backend-tp-db.c
+	 (e_book_backend_tp_db_real_add_contact()): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Implement virtual get_contact_list() function; Fixes: NB#95559
+	Patch by Marco Barisione.
+
+	* src/e-book-backend-tp.c
+	 (GetContactListClosure, get_contact_list_idle_cb(),
+	  e_book_backend_tp_get_contact_list()): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Use correct order of DELETE and INSERT master-uid statements when
+	updating contacts.
+
+	* src/e-book-backend-tp-db.c
+	 (e_book_backend_tp_db_real_update_contact()): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Remove unbalanced "BEGIN TRANSACTION" statement when updating
+	contacts.
+
+	* src/e-book-backend-tp-db.c
+	 (e_book_backend_tp_db_real_update_contact()): See summary.
+
+2008-12-17  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Print caller name when dealing with transactions.
+
+	* src/e-book-backend-tp-db.c (e_book_backend_tp_db_begin(),
+	  e_book_backend_tp_db_commit(), e_book_backend_tp_db_real_begin(),
+	  e_book_backend_tp_db_real_commit(), e_book_backend_tp_db_real_rollback(),
+	  e_book_backend_tp_db_rollback()): Define macros for transaction
+	  handling functions to automatically pass G_STRFUNC.
+
+2008-12-15  Joergen Scheibengruber  <Jorgen.Scheibengruber@nokia.com>
+
+	* configure.ac:
+	* debian/control:
+	* debian/compat:
+	Fix stripping of debug symbols and dependency on libmissioncontrol
+
+2008-12-11  Marco Barisione  <marco.barisione@maemo.org>
+
+	Avoid calling the _load_source_idle_cb() idle callback if the object
+	has already been destroyed.
+
+	* src/e-book-backend-tp.c: (e_book_backend_tp_load_source),
+	(e_book_backend_tp_dispose): 
+
+2008-12-10  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Split database operations into a version with and a version without
+	transaction to avoid nested transactions which would need some
+	transaction manager.
+
+	* src/e-book-backend-tp-db.c
+	 (e_book_backend_tp_db_real_add_contact(),
+	  e_book_backend_tp_db_add_contact(),
+	  e_book_backend_tp_db_real_update_contact(),
+	  e_book_backend_tp_db_update_contact(),
+	  e_book_backend_tp_db_real_delete_contact(),
+	  e_book_backend_tp_db_delete_contact(),
+	  e_book_backend_tp_db_add_contacts(),
+	  e_book_backend_tp_db_update_contacts(),
+	  e_book_backend_tp_db_remove_contacts()): See summary.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Update master UIDs in database.
+
+	* src/e-book-backend-tp-db.c (QueryType, queries[],
+	  e_book_backend_tp_db_fetch_contacts(),
+	  e_book_backend_tp_db_add_master_uids(),
+	  e_book_backend_tp_db_delete_master_uids(),
+	  e_book_backend_tp_db_add_contact(),
+	  e_book_backend_tp_db_update_contact(),
+	  e_book_backend_tp_db_delete_contact()):
+	  Execute queries for updating master UIDs.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Rename e_book_backend_tp_db_end() to e_book_backend_tp_db_commit().
+
+	* src/e-book-backend-tp-db.c
+	 (QueryType, queries[], e_book_backend_tp_db_commit(),
+	  e_book_backend_tp_db_update_contact(),
+	  e_book_backend_tp_db_delete_contact(),
+	  e_book_backend_tp_db_add_contacts(),
+	  e_book_backend_tp_db_update_contacts(),
+	  e_book_backend_tp_db_remove_contacts()): See summary.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Use modern array initializer syntax to more robustly initialize query
+	strings. Give more explicit names to query type enumeration members.
+
+	* src/e-book-backend-tp-db.c (QueryType, queries[]): See summary.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Create master_uid table and some indices.
+
+	* src/e-book-backend-tp-db.c (schema[], create_tables()):
+	  Update schema and support multiple statements in create_tables().
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Simplify code by preparing sqlite statements early.
+
+	* src/e-book-backend-tp-db.c (prepare_statements(),
+	  e_book_backend_tp_db_open(), e_book_backend_tp_db_fetch_contacts(),
+	  e_book_backend_tp_db_begin(), e_book_backend_tp_db_end(),
+	  e_book_backend_tp_db_rollback(), e_book_backend_tp_db_add_contact(),
+	  e_book_backend_tp_db_update_contact(), e_book_backend_tp_db_delete_contact()):
+	  See summary.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Add rudimentary support for multiple master UIDs per contact.
+
+	* src/e-book-backend-tp-contact.c (master_uids_differ(),
+	  master_uids_free(), e_book_backend_tp_contact_free(),
+	  e_book_backend_tp_contact_new(), e_book_backend_tp_contact_dup(),
+	  e_book_backend_tp_contact_update_from_econtact(),
+	  e_book_backend_tp_contact_to_econtact()):
+	* src/e-book-backend-tp-contact.h (EBookBackendTpContact):
+	  Replace master_uid field by array of strings.
+	
+	* src/e-book-backend-tp-db.c (e_book_backend_tp_db_fetch_contacts(),
+	  bind_add_update_contact_query(), queries[], SCHEMA):
+	  Remove master_uid column from schema and queries.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Fix some ref-handling issues to plug memory leaks and more importantly
+	support closing of TP based address books.
+
+	* src/e-book-backend-tp.c: Unref EDataBooks used in closures.
+
+2008-12-09  Mathias Hasselmann  <mathias.hasselmann@maemo.org>
+
+	Make test cases build again.
+
+	* test/Makefile.am: Add "-L." to AM_LDFLAGS.
+
