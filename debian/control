@@ -9,7 +9,7 @@ Standards-Version: 3.7
 Package: evolution-data-server-addressbook-backend-telepathy
 Section: devel
 Architecture: any
-Depends: ${shlibs:Depends}, evolution-data-server-addressbook
+Depends: ${shlibs:Depends}, evolution-data-server
 Description: Telepathy backend for Evolution Data Server
  This package provides a backend for Evolution Data Server than allows access
  to the Telepathy roster.

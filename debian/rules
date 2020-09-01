@@ -9,6 +9,8 @@ ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -mthumb
 endif
 
+CFLAGS += -Wno-deprecated
+
 DEB_DH_STRIP_ARGS :=--dbg-package=evolution-data-server-addressbook-backend-telepathy-dbg
 DEB_CONFIGURE_SCRIPT := ./autogen.sh
 

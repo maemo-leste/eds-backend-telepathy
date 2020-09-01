@@ -62,3 +62,5 @@ test_tpcl_SOURCES = test-tpcl.c
 test_tpcl_LDADD = \
 	libebookbackendtpcl.la
 
+install-data-hook:
+	@(cd $(DESTDIR)$(backenddir) && $(RM) $(backend_LTLIBRARIES))

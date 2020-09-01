@@ -95,7 +95,7 @@ e_module_load (GTypeModule *type_module)
   g_timeout_add_seconds_full (G_PRIORITY_LOW, 1, clean_unused_dbs_timout_cb,
                               NULL, NULL);
 
-  e_book_backend_tp_log_domain_id = e_log_get_id ("tp");
+  e_book_backend_tp_log_domain_id = "tp";
 
   e_book_backend_tp_system_bus_connection = dbus_g_bus_get (
         DBUS_BUS_SYSTEM, &error);
@@ -111,5 +111,5 @@ e_module_load (GTypeModule *type_module)
 G_MODULE_EXPORT void
 e_module_unload (GTypeModule *type_module)
 {
-	e_module = NULL;
+        e_module = NULL;
 }

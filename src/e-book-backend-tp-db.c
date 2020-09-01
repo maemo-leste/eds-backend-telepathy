@@ -30,7 +30,7 @@
 
 #include <glib/gstdio.h>
 #include <telepathy-glib/dbus.h>
-#include <libmcclient/mc-account-manager.h>
+#include <telepathy-glib/account-manager.h>
 
 #include "e-book-backend-tp-db.h"
 #include "e-book-backend-tp-log.h"
@@ -353,49 +353,41 @@ prepare_statements (EBookBackendTpDbPrivate *priv)
 
 static void
 remove_accounts_from_hash_table (GHashTable *account_dbs,
-    const gchar * const *accounts)
+                                 const GList *accounts)
 {
-  const gchar * const *accounts_iter;
-  const gchar *account_name;
+  GList *l;
   gchar *db_name;
 
-  for (accounts_iter = accounts; *accounts_iter != NULL; accounts_iter++) {
-    /* Remove the /org/freedesktop/Telepathy/Account/ prefix */
-    account_name = &(*accounts_iter)[MC_ACCOUNT_DBUS_OBJECT_BASE_LEN];
+  for (l = accounts; l; l = l->next) {
+    const gchar *path_suffix = tp_account_get_path_suffix(l->data);
 
-    db_name = db_filename_for_account (account_name);
+    db_name = db_filename_for_account (path_suffix);
     g_hash_table_remove (account_dbs, db_name);
     g_free (db_name);
   }
 }
 
-static gboolean
-unref_idle_cb (gpointer userdata)
-{
-  g_object_unref (userdata);
-  return FALSE;
-}
-
 static void
-manager_ready_cb (McAccountManager *manager, const GError *error,
-    gpointer userdata)
+am_prepared_cb(GObject *object, GAsyncResult *res, gpointer user_data)
 {
-  GHashTable *account_dbs = userdata;
+  TpAccountManager *manager = (TpAccountManager *)object;
+  GHashTable *account_dbs = user_data;
   GHashTableIter iter;
   gpointer key, value;
+  GError *error = NULL;
+  GList *accounts;
 
-  if (error != NULL) {
+  if (!tp_proxy_prepare_finish (object, res, &error))
+  {
     WARNING ("error whilst retrieving list of accounts: %s",
-        error->message);
+             error->message);
     g_hash_table_unref (account_dbs);
     return;
   }
 
-  remove_accounts_from_hash_table (account_dbs,
-      mc_account_manager_get_valid_accounts (manager));
-
-  remove_accounts_from_hash_table (account_dbs,
-      mc_account_manager_get_invalid_accounts (manager));
+  accounts = tp_account_manager_dup_valid_accounts(manager);
+  remove_accounts_from_hash_table (account_dbs, accounts);
+  g_list_free_full (accounts, g_object_unref);
 
   /* The mutex protects us from the (very unlikely tbh) creation of a new DB
    * between the call to g_stat and g_unlink. */
@@ -424,10 +416,7 @@ manager_ready_cb (McAccountManager *manager, const GError *error,
   g_static_mutex_unlock (&account_cleanup_mutex);
 
   g_hash_table_unref (account_dbs);
-
-  /* It looks like we cannot unref the manager here as libmcclient doesn't
-   * add and extra ref before calling the callback */
-  g_idle_add (unref_idle_cb, manager);
+  g_object_unref(manager);
 }
 
 void
@@ -436,9 +425,8 @@ e_book_backend_tp_db_cleanup_unused_dbs (void)
   GHashTable *account_dbs;
   GDir *dir;
   const gchar *db_name;
-  DBusGConnection *bus;
   TpDBusDaemon *dbus_daemon;
-  McAccountManager *manager;
+  TpAccountManager *manager;
 
   /* A race condition could lead us to delete some used DBs if:
    * 1. A new account (and the corresponding DB) is created
@@ -476,10 +464,9 @@ e_book_backend_tp_db_cleanup_unused_dbs (void)
         GINT_TO_POINTER (stat_buf.st_mtime));
   }
 
-  bus = tp_get_bus ();
-  dbus_daemon = tp_dbus_daemon_new (bus);
-  manager = mc_account_manager_new (dbus_daemon);
-  mc_account_manager_call_when_ready (manager, manager_ready_cb, account_dbs);
+  dbus_daemon = tp_dbus_daemon_dup (NULL);
+  manager = tp_account_manager_new (dbus_daemon);
+  tp_proxy_prepare_async (manager, NULL, am_prepared_cb, account_dbs);
 
   g_object_unref (dbus_daemon);
   g_dir_close (dir);
@@ -533,16 +520,16 @@ e_book_backend_tp_db_open_real (EBookBackendTpDb *tpdb,
       sqlite3_close (priv->db);
 
       MESSAGE ("creating new database: %s", priv->filename);
-      res = sqlite3_open_v2 (priv->filename, &(priv->db), 
+      res = sqlite3_open_v2 (priv->filename, &(priv->db),
           SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
 
       if (res != SQLITE_OK)
       {
         WARNING ("error whilst trying to open database: %s",
             sqlite3_errmsg (priv->db));
-        g_set_error (error, E_BOOK_BACKEND_TP_DB_ERROR, 
-            E_BOOK_BACKEND_TP_DB_ERROR_FAILED, 
-            "Error whilst trying to open database: %s", 
+        g_set_error (error, E_BOOK_BACKEND_TP_DB_ERROR,
+            E_BOOK_BACKEND_TP_DB_ERROR_FAILED,
+            "Error whilst trying to open database: %s",
             sqlite3_errmsg (priv->db));
         goto failure;
       }
@@ -677,7 +664,7 @@ e_book_backend_tp_db_open (EBookBackendTpDb *tpdb, const gchar *account_name,
   return ret;
 }
 
-gboolean 
+gboolean
 e_book_backend_tp_db_close (EBookBackendTpDb *tpdb, GError **error)
 {
   EBookBackendTpDbPrivate *priv = GET_PRIVATE (tpdb);
@@ -953,17 +940,17 @@ error:
 }
 
 static void
-bind_add_update_contact_query (sqlite3_stmt *statement, 
+bind_add_update_contact_query (sqlite3_stmt *statement,
     EBookBackendTpContact *contact)
 {
-  sqlite3_bind_text (statement, 
-      sqlite3_bind_parameter_index (statement, ":uid"), 
+  sqlite3_bind_text (statement,
+      sqlite3_bind_parameter_index (statement, ":uid"),
       contact->uid, -1, SQLITE_TRANSIENT);
 
   if (contact->name)
   {
     sqlite3_bind_text (statement,
-        sqlite3_bind_parameter_index (statement, ":name"), 
+        sqlite3_bind_parameter_index (statement, ":name"),
         contact->name, -1, SQLITE_TRANSIENT);
   } else {
     sqlite3_bind_null (statement, sqlite3_bind_parameter_index (statement, ":name"));
@@ -1019,11 +1006,11 @@ e_book_backend_tp_db_add_master_uids (EBookBackendTpDb *tpdb,
     statement = priv->statements[QUERY_INSERT_MASTER_UID];
 
     sqlite3_bind_text (statement,
-      sqlite3_bind_parameter_index (statement, ":contact_uid"), 
+      sqlite3_bind_parameter_index (statement, ":contact_uid"),
       contact->uid, -1, SQLITE_TRANSIENT);
 
     sqlite3_bind_text (statement,
-      sqlite3_bind_parameter_index (statement, ":master_uid"), 
+      sqlite3_bind_parameter_index (statement, ":master_uid"),
       contact->master_uids->pdata[i], -1, SQLITE_TRANSIENT);
 
     res = sqlite3_step (statement);
@@ -1063,16 +1050,16 @@ e_book_backend_tp_db_add_variants (EBookBackendTpDb *tpdb,
   e_book_backend_tp_return_val_with_error_if_fail (priv->db, FALSE, error);
 
   g_hash_table_iter_init (&iter, contact->variants);
-  while (g_hash_table_iter_next (&iter, &key, NULL)) 
+  while (g_hash_table_iter_next (&iter, &key, NULL))
   {
     statement = priv->statements[QUERY_INSERT_VARIANT];
 
     sqlite3_bind_text (statement,
-      sqlite3_bind_parameter_index (statement, ":contact_uid"), 
+      sqlite3_bind_parameter_index (statement, ":contact_uid"),
       contact->uid, -1, SQLITE_TRANSIENT);
 
     sqlite3_bind_text (statement,
-      sqlite3_bind_parameter_index (statement, ":variant"), 
+      sqlite3_bind_parameter_index (statement, ":variant"),
       key, -1, SQLITE_TRANSIENT);
 
     res = sqlite3_step (statement);
@@ -1316,7 +1303,7 @@ e_book_backend_tp_db_real_delete_contact (EBookBackendTpDb *tpdb,
   statement = priv->statements[QUERY_DELETE_CONTACT];
 
   sqlite3_bind_text (statement,
-      sqlite3_bind_parameter_index (statement, ":uid"), 
+      sqlite3_bind_parameter_index (statement, ":uid"),
       uid, -1, SQLITE_TRANSIENT);
 
   res = sqlite3_step (statement);
@@ -1397,7 +1384,7 @@ e_book_backend_tp_db_add_contacts (EBookBackendTpDb *tpdb,
   return TRUE;
 }
 
-gboolean 
+gboolean
 e_book_backend_tp_db_update_contacts (EBookBackendTpDb *tpdb,
     GArray *contacts, GError **error)
 {

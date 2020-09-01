@@ -13,16 +13,15 @@ AC_STDC_HEADERS
 AC_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
-PKG_CHECK_EXISTS([evolution-data-server-1.2],
-                 [extensiondir=$($PKG_CONFIG --variable=extensiondir evolution-data-server-1.2 2>/dev/null)],
-                 [AC_MSG_ERROR([Package requirements were not met: evolution-data-server-1.2.pc not found])])
+PKG_CHECK_EXISTS([libedata-book-1.2],
+                 [extensiondir=$($PKG_CONFIG --variable=backenddir libedata-book-1.2 2>/dev/null)],
+                 [AC_MSG_ERROR([Package requirements were not met: libedata-book-1.2.pc not found])])
 AC_SUBST(EXTENSIONDIR, $extensiondir)
 
 PKG_CHECK_MODULES(GIO, gio-2.0)
 PKG_CHECK_MODULES(DBUS, dbus-glib-1)
 PKG_CHECK_MODULES(EDATABOOK, libedata-book-1.2 libebook-1.2)
 PKG_CHECK_MODULES(TP, telepathy-glib)
-#PKG_CHECK_MODULES(TPR, rtcom-telepathy-glib)
 PKG_CHECK_MODULES(SQLITE, sqlite3)
 PKG_CHECK_MODULES([MCE], mce >= 1.5)
 

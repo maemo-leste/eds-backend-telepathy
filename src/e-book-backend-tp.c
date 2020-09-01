@@ -33,7 +33,7 @@
 #include <dbus/dbus-glib-lowlevel.h>
 #include <mce/dbus-names.h>
 #include <telepathy-glib/dbus.h>
-#include <libedata-book/e-data-book-view.h>
+#include <libedata-book/libedata-book.h>
 #include <gio/gio.h>
 #include <telepathy-glib/util.h>
 
@@ -43,7 +43,12 @@
 #include "e-book-backend-tp-db.h"
 #include "e-book-backend-tp-log.h"
 
-G_DEFINE_TYPE (EBookBackendTp, e_book_backend_tp, E_TYPE_BOOK_BACKEND_SYNC);
+#define EDB_ERROR(_code) \
+	(e_data_book_create_error (E_DATA_BOOK_STATUS_ ## _code, NULL))
+#define EDB_ERROR_EX(_code, _msg) \
+	(e_data_book_create_error (E_DATA_BOOK_STATUS_ ## _code, _msg))
+
+G_DEFINE_TYPE (EBookBackendTp, e_book_backend_tp, E_TYPE_BOOK_BACKEND);
 
 #define GET_PRIVATE(o) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), E_TYPE_BOOK_BACKEND_TP, EBookBackendTpPrivate))
@@ -66,8 +71,7 @@ struct _EBookBackendTpPrivate {
   gboolean members_ready; /* members ready to report to views */
   gulong members_ready_signal_id;
   GList *views;
-  McAccount *account;
-  McProfile *profile;
+  TpAccount *account;
   const gchar *vcard_field;
   const gchar *profile_name;
   DBusGProxy *mce_request_proxy;
@@ -117,17 +121,17 @@ e_book_backend_tp_generate_uid (EBookBackendTp *backend, const gchar *name)
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
   gchar *tmp = NULL;
   gint count = 0;
-  const gchar *account_name;
+  const gchar *path_suffix;
 
-  account_name = priv->account->name;
+  path_suffix = tp_account_get_path_suffix(priv->account);
 
-  tmp = g_strdup_printf ("%s-%s", account_name, name);
+  tmp = g_strdup_printf ("%s-%s", path_suffix, name);
 
   while (g_hash_table_lookup (priv->uid_to_contact, tmp))
   {
     count++;
     g_free (tmp);
-    tmp = g_strdup_printf ("%s-%s-%d", account_name, name, count);
+    tmp = g_strdup_printf ("%s-%s-%d", path_suffix, name, count);
   }
 
   return tmp;
@@ -141,10 +145,7 @@ static void notify_complete_all_views (EBookBackendTp *backend)
   priv = GET_PRIVATE (backend);
 
   for (l = priv->views; l != NULL; l = l->next)
-  {
-    e_data_book_view_notify_complete ((EDataBookView *)l->data, 
-        GNOME_Evolution_Addressbook_Success);
-  }
+    e_data_book_view_notify_complete ((EDataBookView *)l->data, NULL);
 }
 
 static guint
@@ -210,7 +211,7 @@ notify_remotely_updated_contacts_and_complete (EBookBackendTp *backend)
 }
 
 static void
-notify_updated_contact (EBookBackendTp *backend, 
+notify_updated_contact (EBookBackendTp *backend,
     EBookBackendTpContact *contact)
 {
   EBookBackendTpPrivate *priv = NULL;
@@ -264,7 +265,7 @@ flush_db_updates (EBookBackendTp *backend)
 
     g_hash_table_remove_all (priv->contacts_to_update_in_db);
     return;
-  }      
+  }
 
   tmp_list = g_hash_table_get_values (priv->contacts_to_update_in_db);
   if (!tmp_list)
@@ -385,7 +386,7 @@ delete_contacts (EBookBackendTp *backend, GArray *contacts)
 
   g_return_if_fail (priv->tpdb);
 
-  uids_to_delete = g_array_sized_new (TRUE, TRUE, sizeof (gchar *), 
+  uids_to_delete = g_array_sized_new (TRUE, TRUE, sizeof (gchar *),
       contacts->len);
 
   for (i = 0; i < contacts->len; i++)
@@ -397,7 +398,7 @@ delete_contacts (EBookBackendTp *backend, GArray *contacts)
     if (contact->handle > 0)
     {
       DEBUG ("removing from handle to contact mapping");
-      g_hash_table_remove (priv->handle_to_contact, 
+      g_hash_table_remove (priv->handle_to_contact,
           GINT_TO_POINTER (contact->handle));
     }
 
@@ -431,7 +432,7 @@ delete_contacts (EBookBackendTp *backend, GArray *contacts)
      * this. */
     for (l = priv->views; l != NULL; l = l->next)
     {
-      e_data_book_view_notify_remove ((EDataBookView *)l->data, 
+      e_data_book_view_notify_remove ((EDataBookView *)l->data,
           tmp);
     }
 
@@ -458,7 +459,7 @@ tp_cl_aliases_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
 
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GINT_TO_POINTER (contact_in->handle));
 
     if (contact)
@@ -500,7 +501,7 @@ tp_cl_presence_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
 
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GINT_TO_POINTER (contact_in->handle));
 
     if (contact)
@@ -508,7 +509,7 @@ tp_cl_presence_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
       DEBUG ("updating status for uid %s, handle %d and name %s "
           "from %s;%s to %s;%s",
           contact->uid, contact->handle, contact->name,
-          contact->status, contact->status_message, 
+          contact->status, contact->status_message,
           contact_in->status, contact_in->status_message);
 
       g_free (contact->status);
@@ -535,7 +536,7 @@ tp_cl_presence_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
 }
 
 static void
-tp_cl_flags_changed (EBookBackendTpCl *tpcl, GArray *contacts, 
+tp_cl_flags_changed (EBookBackendTpCl *tpcl, GArray *contacts,
     gpointer userdata)
 {
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (userdata);
@@ -549,7 +550,7 @@ tp_cl_flags_changed (EBookBackendTpCl *tpcl, GArray *contacts,
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
 
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GINT_TO_POINTER (contact_in->handle));
 
     if (contact)
@@ -594,7 +595,7 @@ request_avatar_data_for_offline_contacts (EBookBackendTp *backend,
   if (!contacts || !contacts->len)
     return;
 
-  contacts_with_unknown_token = g_array_sized_new (TRUE, TRUE, 
+  contacts_with_unknown_token = g_array_sized_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *), contacts->len);
 
   for (i = 0; i < contacts->len; i++)
@@ -616,7 +617,7 @@ request_avatar_data_for_offline_contacts (EBookBackendTp *backend,
 }
 
 static void
-tp_cl_contacts_added (EBookBackendTpCl *tpcl, GArray *contacts, 
+tp_cl_contacts_added (EBookBackendTpCl *tpcl, GArray *contacts,
     gpointer userdata)
 {
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (userdata);
@@ -635,7 +636,7 @@ tp_cl_contacts_added (EBookBackendTpCl *tpcl, GArray *contacts,
   for (i = 0; i < contacts->len; i++)
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
-    contact = g_hash_table_lookup (priv->name_to_contact, 
+    contact = g_hash_table_lookup (priv->name_to_contact,
         contact_in->name);
 
     if (contact)
@@ -656,7 +657,7 @@ tp_cl_contacts_added (EBookBackendTpCl *tpcl, GArray *contacts,
       contact = e_book_backend_tp_contact_dup (contact_in);
       contact->uid = e_book_backend_tp_generate_uid (backend, contact->name);
 
-      g_hash_table_insert (priv->name_to_contact, 
+      g_hash_table_insert (priv->name_to_contact,
           g_strdup (contact->name),
           e_book_backend_tp_contact_ref (contact));
 
@@ -677,10 +678,10 @@ tp_cl_contacts_added (EBookBackendTpCl *tpcl, GArray *contacts,
 
     g_array_append_val (contacts_to_update, contact);
 
-    g_hash_table_insert (priv->handle_to_contact, 
+    g_hash_table_insert (priv->handle_to_contact,
         GINT_TO_POINTER (contact->handle),
         e_book_backend_tp_contact_ref (contact));
-    g_hash_table_insert (priv->uid_to_contact, 
+    g_hash_table_insert (priv->uid_to_contact,
         g_strdup (contact->uid),
         e_book_backend_tp_contact_ref (contact));
   }
@@ -729,7 +730,7 @@ tp_cl_contacts_removed (EBookBackendTpCl *tpcl, GArray *contacts,
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
 
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GINT_TO_POINTER (contact_in->handle));
 
     if (contact)
@@ -770,13 +771,13 @@ tp_cl_avatar_tokens_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
 
   contacts_to_update = g_array_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *));
-  contacts_to_request = g_array_new (TRUE, TRUE, 
+  contacts_to_request = g_array_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *));
 
   for (i = 0; i < contacts->len; i++)
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GUINT_TO_POINTER (contact_in->handle));
 
     if (!contact)
@@ -794,7 +795,7 @@ tp_cl_avatar_tokens_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
     {
       g_free (contact->avatar_token);
       contact->avatar_token = g_strdup (contact_in->avatar_token);
-    } 
+    }
 
     if (contact->avatar_token && contact->avatar_token[0] != '\0')
       avatar_path = g_build_filename (g_get_home_dir (), ".osso-abook",
@@ -837,7 +838,7 @@ typedef struct
 } AvatarDataSavedClosure;
 
 static void
-avatar_data_saved_cb (GObject *source, GAsyncResult *res, 
+avatar_data_saved_cb (GObject *source, GAsyncResult *res,
     gpointer userdata)
 {
   AvatarDataSavedClosure *closure = (AvatarDataSavedClosure *)userdata;
@@ -866,7 +867,7 @@ done:
 }
 
 static void
-tp_cl_avatar_data_changed_cb (EBookBackendTpCl *tpcl, 
+tp_cl_avatar_data_changed_cb (EBookBackendTpCl *tpcl,
     EBookBackendTpContact *contact_in, gpointer userdata)
 {
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (userdata);
@@ -876,7 +877,7 @@ tp_cl_avatar_data_changed_cb (EBookBackendTpCl *tpcl,
   GFile *avatar_file;
   AvatarDataSavedClosure *closure;
 
-  contact = g_hash_table_lookup (priv->handle_to_contact, 
+  contact = g_hash_table_lookup (priv->handle_to_contact,
       GUINT_TO_POINTER (contact_in->handle));
 
   if (!contact)
@@ -899,7 +900,7 @@ tp_cl_avatar_data_changed_cb (EBookBackendTpCl *tpcl,
     g_free (contact->avatar_token);
     contact->avatar_token = g_strdup (contact_in->avatar_token);
 
-    contacts_to_update = g_array_sized_new (TRUE, TRUE, 
+    contacts_to_update = g_array_sized_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *), 1);
     g_array_append_val (contacts_to_update, contact);
     update_contacts (backend, contacts_to_update, TRUE);
@@ -948,18 +949,18 @@ tp_cl_capabilities_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
 
   DEBUG ("capabalities_changed_cb");
 
-  contacts_to_update = g_array_sized_new (TRUE, TRUE, 
+  contacts_to_update = g_array_sized_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *), contacts->len);
 
   for (i = 0; i < contacts->len; i++)
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GUINT_TO_POINTER (contact_in->handle));
 
     if (!contact)
     {
-      DEBUG ("Unknown contact with handle %d", 
+      DEBUG ("Unknown contact with handle %d",
           contact_in->handle);
       continue;
     }
@@ -968,7 +969,7 @@ tp_cl_capabilities_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
 
     g_array_append_val (contacts_to_update, contact);
   }
-  
+
   if (contacts_to_update->len > 0 )
   {
     update_contacts (backend, contacts_to_update, FALSE);
@@ -977,7 +978,7 @@ tp_cl_capabilities_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
   g_array_free (contacts_to_update, TRUE);
 }
 
-static void 
+static void
 tp_cl_contact_info_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
     gpointer userdata)
 {
@@ -987,31 +988,31 @@ tp_cl_contact_info_changed_cb (EBookBackendTpCl *tpcl, GArray *contacts,
   EBookBackendTpContact *contact_in;
   guint i = 0;
   GArray *contacts_to_update = NULL;
-  
+
   DEBUG ("tp_cl_contact_info_changed_cb");
 
-  contacts_to_update = g_array_sized_new (TRUE, TRUE, 
+  contacts_to_update = g_array_sized_new (TRUE, TRUE,
       sizeof (EBookBackendTpContact *), contacts->len);
-  
+
   for (i = 0; i < contacts->len; i++)
   {
     contact_in = g_array_index (contacts, EBookBackendTpContact *, i);
-    contact = g_hash_table_lookup (priv->handle_to_contact, 
+    contact = g_hash_table_lookup (priv->handle_to_contact,
         GUINT_TO_POINTER (contact_in->handle));
 
     if (!contact)
     {
-      DEBUG ("Unknown contact with handle %d", 
+      DEBUG ("Unknown contact with handle %d",
           contact_in->handle);
       continue;
     }
-    
+
     g_free (contact->contact_info);
-    
+
     contact->contact_info = g_strdup (contact_in->contact_info);
     g_array_append_val (contacts_to_update, contact);
   }
-  
+
   if (contacts_to_update->len > 0 )
   {
     update_contacts (backend, contacts_to_update, TRUE);
@@ -1209,13 +1210,13 @@ merge_contacts (EBookBackendTp *backend, EBookBackendTpContact *dest,
   /* Be sure to have existing_contact in all the tables as src could
    * have ended up there instead od dest and because delete_contact
    * could have removed the contact from some tables. */
-  g_hash_table_insert (priv->handle_to_contact, 
+  g_hash_table_insert (priv->handle_to_contact,
       GINT_TO_POINTER (dest->handle),
       e_book_backend_tp_contact_ref (dest));
-  g_hash_table_insert (priv->name_to_contact, 
+  g_hash_table_insert (priv->name_to_contact,
       g_strdup (dest->name),
       e_book_backend_tp_contact_ref (dest));
-  g_hash_table_insert (priv->uid_to_contact, 
+  g_hash_table_insert (priv->uid_to_contact,
       g_strdup (dest->uid),
       e_book_backend_tp_contact_ref (dest));
 }
@@ -1346,7 +1347,7 @@ _sync_phase_3_idle_cb (gpointer userdata)
 
   if (contacts_to_update_in_db->len > 0)
   {
-    if (!e_book_backend_tp_db_update_contacts (priv->tpdb, 
+    if (!e_book_backend_tp_db_update_contacts (priv->tpdb,
           contacts_to_update_in_db, &error))
     {
       g_critical ("Error whilst updating contacts in database: %s",
@@ -1426,7 +1427,7 @@ _sync_phase_2_idle_cb (gpointer userdata)
     g_array_free (closure->contacts_to_update, TRUE);
   }
 
-  /* 
+  /*
    * We must iterate through all contacts looking for the unseen flag and use
    * that to know which ones to remove
    */
@@ -1480,7 +1481,7 @@ _sync_phase_2_idle_cb (gpointer userdata)
  * initial database population AND when we are online.
  */
 static void
-tp_cl_get_members_cb (EBookBackendTpCl *tpcl, GArray *contacts, 
+tp_cl_get_members_cb (EBookBackendTpCl *tpcl, GArray *contacts,
     const GError *error, gpointer userdata)
 {
   EBookBackendTp *backend = (EBookBackendTp *)userdata;
@@ -1503,7 +1504,7 @@ tp_cl_get_members_cb (EBookBackendTpCl *tpcl, GArray *contacts,
   /* Note that we cannot just return here even if the roster is empty
    * or we will skip some needed steps, for instance we will not mark
    * for deletion unseen contacts. */
-  
+
   DEBUG ("get_members called with %d contacts", contacts->len);
 
   closure = g_new0 (GetMembersClosure, 1);
@@ -1584,25 +1585,25 @@ tp_cl_get_members_cb (EBookBackendTpCl *tpcl, GArray *contacts,
       contact->uid = e_book_backend_tp_generate_uid (backend, contact->name);
 
       /* Save in the uid hash table */
-      g_hash_table_insert (priv->uid_to_contact, g_strdup (contact->uid), 
+      g_hash_table_insert (priv->uid_to_contact, g_strdup (contact->uid),
           e_book_backend_tp_contact_ref (contact));
 
       /* Save in the name hash table */
-      g_hash_table_insert (priv->name_to_contact, g_strdup (contact->name), 
+      g_hash_table_insert (priv->name_to_contact, g_strdup (contact->name),
           e_book_backend_tp_contact_ref (contact));
-      
+
       /* Save for adding to the database (leave ownership of the contact) */
       g_array_append_val (closure->contacts_to_add, contact);
 
-      DEBUG ("New contact with handle %d and name %s", 
+      DEBUG ("New contact with handle %d and name %s",
           contact->handle, contact->name);
     }
 
     /* Add to the handle lookup table */
-    if (g_hash_table_lookup (priv->handle_to_contact, 
+    if (g_hash_table_lookup (priv->handle_to_contact,
           GINT_TO_POINTER (contact_in->handle)) == NULL)
     {
-      g_hash_table_insert (priv->handle_to_contact, 
+      g_hash_table_insert (priv->handle_to_contact,
           GINT_TO_POINTER (contact_in->handle),
           e_book_backend_tp_contact_ref (contact));
     } else {
@@ -1649,7 +1650,7 @@ _sync_phase_1 (EBookBackendTp *backend)
   if (!e_book_backend_tp_cl_get_members (priv->tpcl, tp_cl_get_members_cb,
           g_object_ref (backend), &error))
   {
-    WARNING ("Error when asking for members: %s", 
+    WARNING ("Error when asking for members: %s",
         error ? error->message : "unknown error");
     g_clear_error (&error);
     finish_online_initialization (backend);
@@ -1716,7 +1717,7 @@ tp_ready_cb (EBookBackendTp *backend, gpointer userdata)
   MESSAGE ("database import complete, we're ready");
 
   /* Now that we are ready lets listen for the status changed signal */
-  g_signal_connect (priv->tpcl, "status-changed", 
+  g_signal_connect (priv->tpcl, "status-changed",
       (GCallback)tp_cl_status_changed_cb, backend);
 
   g_signal_connect (priv->tpcl, "aliases-changed",
@@ -1776,7 +1777,7 @@ _sync_phase_0_idle_cb (gpointer userdata)
 
   g_return_val_if_fail (priv->tpdb, FALSE);
 
-  /* We need to know when the database import is complete. So we can 
+  /* We need to know when the database import is complete. So we can
    * consider moving to phase 1 but only when ready*/
   g_signal_connect (backend, "ready", (GCallback)tp_ready_cb, userdata);
 
@@ -1787,18 +1788,18 @@ _sync_phase_0_idle_cb (gpointer userdata)
   {
     DEBUG ("retrieved %d contacts from database", contacts->len);
 
-    /* 
+    /*
      * Import the contacts from the database into the initial set of hash
      * tables
      */
     for (i = 0; i < contacts->len; i++)
     {
       contact = g_array_index (contacts, EBookBackendTpContact *, i);
-      g_hash_table_insert (priv->uid_to_contact, 
-          g_strdup (contact->uid), 
+      g_hash_table_insert (priv->uid_to_contact,
+          g_strdup (contact->uid),
           e_book_backend_tp_contact_ref (contact));
-      g_hash_table_insert (priv->name_to_contact, 
-          g_strdup (contact->name), 
+      g_hash_table_insert (priv->name_to_contact,
+          g_strdup (contact->name),
           e_book_backend_tp_contact_ref (contact));
 
       if (contact->pending_flags & SCHEDULE_DELETE)
@@ -1849,54 +1850,35 @@ _sync_phase_0_idle_cb (gpointer userdata)
 /* backend implementations */
 
 static void
-account_compat_ready_cb (McAccount *account, const GError *error_in,
-    gpointer userdata)
+account_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
-  EBookBackendTp *backend = userdata;
-  EBookBackendTpPrivate *priv = GET_PRIVATE (backend); 
-  const gchar *profile_name = NULL;
+  TpAccount *account = (TpAccount * )object;
+  EBookBackendTp *backend = user_data;
+  EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
   GError *error = NULL;
+  const gchar *path_suffix;
 
-  g_return_if_fail (priv->tpdb);
-
-  if (error_in)
+  if (!tp_proxy_prepare_finish (object, res, &error))
   {
-    WARNING ("Unable to retrieve the account properties");
-    goto error;
+    WARNING ("Error preparing account %s: %s\n",
+             tp_account_get_path_suffix(account), error->message);
+    goto error_out;
   }
 
-  profile_name = mc_account_compat_get_profile (priv->account);
-  priv->profile = mc_profile_lookup (profile_name);
-
-  if (!priv->profile)
+  if (!priv->tpdb)
   {
-    WARNING ("Unable to get mission control profile");
-    goto error;
+    g_warn_if_fail (priv->tpdb);
+    goto error_out;
   }
 
-  if (!(mc_profile_get_capabilities (priv->profile) &
-        MC_PROFILE_CAPABILITY_SUPPORTS_ROSTER))
-  {
-    g_critical (G_STRLOC ": the account %s doesn't support rosters",
-        priv->account->name);
-    goto error;
-  }
+  path_suffix = tp_account_get_path_suffix(account);
 
-  priv->vcard_field = mc_profile_get_vcard_field (priv->profile);
-  priv->profile_name = mc_profile_get_unique_name (priv->profile);
-
-  if (!priv->vcard_field)
-  {
-    WARNING ("No vcard field available in profile");
-    goto error;
-  }
-  
-  if (!e_book_backend_tp_db_open (priv->tpdb, priv->account->name, &error))
+  if (!e_book_backend_tp_db_open (priv->tpdb, path_suffix, &error))
   {
     g_critical ("Error when opening database: %s",
         error ? error->message : "unknown error");
     g_clear_error (&error);
-    goto error;
+    goto error_out;
   }
 
   if (!e_book_backend_tp_cl_load (priv->tpcl, priv->account, &error))
@@ -1904,7 +1886,7 @@ account_compat_ready_cb (McAccount *account, const GError *error_in,
     g_critical ("Error when loading the contact list: %s",
         error ? error->message : "unknown error");
     g_clear_error (&error);
-    goto error;
+    goto error_out;
   }
 
   /* This idle will populate from the database and when it has done so fire
@@ -1913,7 +1895,7 @@ account_compat_ready_cb (McAccount *account, const GError *error_in,
 
   return;
 
-error:
+error_out:
   /* Even implementing the async interface EDS wants use to do the load in a
    * sync way. This is not possible using Telepathy so we do the real load
    * asynchronously but we lose the ability to report proper errors if
@@ -1954,7 +1936,7 @@ get_inactivity_status_cb (DBusGProxy *proxy, DBusGProxyCall *call, void *userdat
   priv->mce_request_proxy = NULL;
 }
 
-typedef struct 
+typedef struct
 {
   EBookBackendTp *backend;
   gchar *account_name;
@@ -1965,24 +1947,28 @@ load_source_idle_cb (gpointer userdata)
 {
   LoadSourceClosure *closure = userdata;
   EBookBackendTpPrivate *priv = GET_PRIVATE (closure->backend);
-  DBusGConnection *bus;
+  GError *error = NULL;
   TpDBusDaemon *dbus_daemon;
   gchar *object_path;
 
-  bus = tp_get_bus ();
-  dbus_daemon = tp_dbus_daemon_new (bus);
-  object_path = g_strconcat (MC_ACCOUNT_DBUS_OBJECT_BASE,
-      closure->account_name, NULL);
-  priv->account = mc_account_new (dbus_daemon, object_path);
+  dbus_daemon = tp_dbus_daemon_dup (NULL);
+  object_path =
+      g_strconcat (TP_ACCOUNT_OBJECT_PATH_BASE, closure->account_name, NULL);
+  priv->account = tp_account_new (dbus_daemon, object_path, &error);
   g_free (object_path);
   g_object_unref (dbus_daemon);
 
-  if (priv->account)
-    mc_account_compat_call_when_ready (priv->account, account_compat_ready_cb,
-        g_object_ref (closure->backend));
+  if (error)
+  {
+    WARNING ("Unable to open telepathy account: %s - %s",
+             closure->account_name, error->message);
+    g_clear_error (&error);
+  }
   else
-    WARNING ("Unable to open mission control account: %s",
-        closure->account_name);
+  {
+    tp_proxy_prepare_async (priv->account, NULL, account_ready_cb,
+                            g_object_ref (closure->backend));
+  }
 
   priv->mce_request_proxy = dbus_g_proxy_new_for_name (
       e_book_backend_tp_system_bus_connection,
@@ -1997,53 +1983,58 @@ load_source_idle_cb (gpointer userdata)
   return FALSE;
 }
 
-static GNOME_Evolution_Addressbook_CallStatus
-e_book_backend_tp_load_source (EBookBackend *backend, ESource *source, 
-    gboolean only_if_exists)
+static gboolean
+e_book_backend_tp_open_sync (EBookBackend *backend,
+                             GCancellable *cancellable,
+                             GError **error)
 {
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
-  gchar *account_name = NULL;
-  gchar *uri = NULL;
-  GNOME_Evolution_Addressbook_CallStatus status =
-    GNOME_Evolution_Addressbook_Success;
+  ESource *source;
+  const gchar *uid = NULL;
 
   /* e_book_backend_tp_load_source can be called more than once so we have to
    * avoid problems with it. */
   if (priv->load_started)
-    return GNOME_Evolution_Addressbook_Success;
+    return TRUE;
+
+  if (cancellable)
+  {
+    *error = EDB_ERROR_EX (COULD_NOT_CANCEL, "Not supported");
+    return FALSE;
+  }
 
   priv->load_started = TRUE;
 
-  uri = e_source_get_uri (source);
+  source = e_backend_get_source (E_BACKEND (backend));
+  uid = e_source_get_uid (source);
 
-  if (sscanf (uri, "tp://%as", &account_name) == 1)
-  {
-    LoadSourceClosure *closure;
+  LoadSourceClosure *closure;
 
-    closure = g_new0 (LoadSourceClosure, 1);
-    closure->backend = g_object_ref (backend);
-    closure->account_name = account_name; /* Leave ownership */
+  closure = g_new0 (LoadSourceClosure, 1);
+  closure->backend = g_object_ref (backend);
+  closure->account_name = strdup(uid); /* Leave ownership */
 
-    e_book_backend_set_is_loaded (E_BOOK_BACKEND (backend), TRUE);
-    e_book_backend_set_is_writable (E_BOOK_BACKEND (backend), TRUE);
+  e_book_backend_set_writable (E_BOOK_BACKEND (backend), TRUE);
 
-    g_idle_add (load_source_idle_cb, closure);
-  } else {
-    WARNING ("Error when parsing uri %s", uri);
-    status = GNOME_Evolution_Addressbook_OtherError;
-  }
+  g_idle_add (load_source_idle_cb, closure);
 
-  g_free (uri);
-
-  return status;
+  return TRUE;
 }
 
-static char *
-e_book_backend_tp_get_static_capabilities (EBookBackend *backend)
+static gchar *
+e_book_backend_tp_get_backend_property (EBookBackend *backend,
+                                        const gchar *prop_name)
 {
-  return g_strdup ("local,do-initial-query,contact-lists");
-}
+  g_return_val_if_fail (prop_name != NULL, NULL);
 
+  if (g_str_equal (prop_name, CLIENT_BACKEND_PROPERTY_CAPABILITIES))
+    return g_strdup ("local,do-initial-query,contact-lists");
+
+  /* Chain up to parent's get_backend_property() method. */
+  return E_BOOK_BACKEND_CLASS (e_book_backend_tp_parent_class)->
+          get_backend_property (backend, prop_name);
+
+}
 /* Stream the contacts over to the client.in the view. */
 
 typedef struct {
@@ -2215,8 +2206,7 @@ notify_all_contacts_updated_for_view (EBookBackendTp *backend,
 
   g_ptr_array_free (all_contacts, TRUE);
 
-  e_data_book_view_notify_complete (book_view,
-    GNOME_Evolution_Addressbook_Success);
+  e_data_book_view_notify_complete (book_view, NULL);
 }
 
 static void
@@ -2239,7 +2229,7 @@ book_view_tp_members_ready_cb (EBookBackendTp *backend, gpointer userdata)
   notify_all_contacts_updated (backend);
 }
 
-typedef struct 
+typedef struct
 {
   EBookBackendTp *backend;
   EDataBookView *book_view;
@@ -2260,7 +2250,7 @@ start_book_view_idle_cb (gpointer userdata)
         "be started");
 
     e_data_book_view_notify_complete (closure->book_view,
-        GNOME_Evolution_Addressbook_OtherError);
+                                      EDB_ERROR (OTHER_ERROR));
 
     goto done;
   }
@@ -2295,12 +2285,12 @@ done:
   return FALSE;
 }
 
-/* 
+/*
  * Create a closure, populate with all the objects we need and then spin off
  * into the mainloop via an idle.
  */
 static void
-e_book_backend_tp_start_book_view (EBookBackend *backend, 
+e_book_backend_tp_start_book_view (EBookBackend *backend,
     EDataBookView *book_view)
 {
   BookViewClosure *closure;
@@ -2409,12 +2399,6 @@ e_book_backend_tp_dispose (GObject *object)
     priv->account = NULL;
   }
 
-  if (priv->profile)
-  {
-    g_object_unref (priv->profile);
-    priv->profile = NULL;
-  }
-
   g_object_unref (priv->tpcl);
 
   if (priv->tpdb)
@@ -2506,19 +2490,6 @@ e_book_backend_tp_init (EBookBackendTp *backend)
   dbus_bus_add_match (connection, INVACTIVITY_MATCH_RULE, NULL);
 }
 
-static GNOME_Evolution_Addressbook_CallStatus
-e_book_backend_tp_cancel_operation (EBookBackend *backend, EDataBook *book)
-{
-  return GNOME_Evolution_Addressbook_CouldNotCancel;
-}
-
-static void 
-e_book_backend_tp_set_mode (EBookBackend *backend, 
-    GNOME_Evolution_Addressbook_BookMode mode)
-{
-
-}
-
 typedef struct
 {
   EBookBackend *backend;
@@ -2533,18 +2504,18 @@ modify_contact_idle_cb (gpointer userdata)
   ModifyContactClosure *closure = (ModifyContactClosure *)userdata;
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (closure->backend);
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
-  GNOME_Evolution_Addressbook_CallStatus status;
   const gchar *uid = NULL;
   EBookBackendTpContact *contact = NULL;
   EBookBackendTpClStatus tpcl_status;
   GError *error = NULL;
   EContact *updated_econtact;
+  EDataBookStatus status;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contact cannot "
         "be modified");
-    status = GNOME_Evolution_Addressbook_OtherError;
+    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
     goto done;
   }
 
@@ -2552,19 +2523,19 @@ modify_contact_idle_cb (gpointer userdata)
 
   if (!priv->tpdb)
   {
-    status = BookRemoved;
+    status = E_DATA_BOOK_STATUS_BOOK_REMOVED;
     goto done;
   }
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = GNOME_Evolution_Addressbook_NoSpace;
+    status = E_DATA_BOOK_STATUS_NO_SPACE;
     goto done;
   }
 
   flush_db_updates (backend);
 
-  status = GNOME_Evolution_Addressbook_Success;
+  status = E_DATA_BOOK_STATUS_SUCCESS;
 
   uid = e_contact_get_const (closure->contact, E_CONTACT_UID);
 
@@ -2583,12 +2554,12 @@ modify_contact_idle_cb (gpointer userdata)
       g_free (tmp);
 
       /* update our contact in place, noting any changes */
-      e_book_backend_tp_contact_update_from_econtact (contact, 
+      e_book_backend_tp_contact_update_from_econtact (contact,
           closure->contact, priv->vcard_field);
 
       DEBUG ("pending flags: %x %x", contact->pending_flags, SCHEDULE_UPDATE_MASTER_UID);
 
-      if (contact->pending_flags & SCHEDULE_UPDATE_FLAGS 
+      if (contact->pending_flags & SCHEDULE_UPDATE_FLAGS
           || contact->pending_flags & SCHEDULE_UNBLOCK
           || contact->pending_flags & SCHEDULE_UPDATE_MASTER_UID
           || contact->pending_flags & SCHEDULE_UPDATE_VARIANTS)
@@ -2619,33 +2590,44 @@ modify_contact_idle_cb (gpointer userdata)
           WARNING ("Error whilst updating database contact: %s",
               error ? error->message : "unknown error");
           g_clear_error (&error);
-        } else {
+        }
+        else
+        {
           contact->pending_flags &= ~SCHEDULE_UPDATE_MASTER_UID;
           contact->pending_flags &= ~SCHEDULE_UPDATE_VARIANTS;
         }
 
         notify_updated_contact (backend, contact);
       }
-    } else {
+    }
+    else
+    {
       WARNING ("Unknown uid (%s) on submitted vcard", uid);
-      status = GNOME_Evolution_Addressbook_OtherError;
+      status = E_DATA_BOOK_STATUS_OTHER_ERROR;
     }
   } else {
     WARNING ("No uid found on submitted vcard");
-    status = GNOME_Evolution_Addressbook_OtherError;
+    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
   }
 
 done:
-  if (status == GNOME_Evolution_Addressbook_Success)
+  if (status == E_DATA_BOOK_STATUS_SUCCESS)
   {
-    updated_econtact = e_book_backend_tp_contact_to_econtact (contact, 
-        priv->vcard_field, priv->profile_name);
-    e_data_book_respond_modify (closure->book, closure->opid, status, 
-        updated_econtact);
-  } else {
+    GSList modified_contacts;
+
+    modified_contacts.data = updated_econtact;
+    modified_contacts.next = NULL;
+
+    updated_econtact = e_book_backend_tp_contact_to_econtact (
+          contact, priv->vcard_field, priv->profile_name);
+    e_data_book_respond_modify_contacts (closure->book, closure->opid, NULL,
+                                         &modified_contacts);
+  }
+  else
+  {
     g_object_unref (closure->contact);
-    e_data_book_respond_modify (closure->book, closure->opid, status, 
-        NULL);
+    e_data_book_respond_modify_contacts (closure->book, closure->opid,
+                                e_data_book_create_error(status, NULL), NULL);
   }
 
   g_object_unref (closure->contact);
@@ -2676,7 +2658,7 @@ e_book_backend_tp_modify_contact (EBookBackend *backend, EDataBook *book,
   g_idle_add (modify_contact_idle_cb, closure);
 }
 
-typedef struct 
+typedef struct
 {
   EBookBackend *backend;
   EContact *econtact;
@@ -2809,7 +2791,7 @@ run_create_contact (EBookBackendTp *backend, EContact *econtact, GError **error_
 
         e_book_backend_tp_contact_unref (contact);
         g_object_unref (backend);
-    
+
         return NULL;
       }
     }
@@ -2828,13 +2810,13 @@ create_contact_idle_cb (gpointer userdata)
   EBookBackendTpContact *contact = NULL;
   EContact *econtact = NULL;
   GError *error = NULL;
-  GNOME_Evolution_Addressbook_CallStatus status;
+  EDataBookStatus status;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contact cannot "
         "be created");
-    status = GNOME_Evolution_Addressbook_OtherError;
+    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
     goto done;
   }
 
@@ -2842,24 +2824,42 @@ create_contact_idle_cb (gpointer userdata)
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = GNOME_Evolution_Addressbook_NoSpace;
+    status = E_DATA_BOOK_STATUS_NO_SPACE;
     goto done;
   }
 
   contact = run_create_contact (backend, closure->econtact, &error);
+
   if (contact)
   {
-    status = GNOME_Evolution_Addressbook_Success;
-    econtact = e_book_backend_tp_contact_to_econtact (contact, priv->vcard_field,
-        priv->profile_name);
-  } else {
-    status = GNOME_Evolution_Addressbook_OtherError;
+    status = E_DATA_BOOK_STATUS_SUCCESS;
+    econtact = e_book_backend_tp_contact_to_econtact (
+          contact, priv->vcard_field, priv->profile_name);
+  }
+  else
+  {
+    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
     econtact = NULL;
     g_clear_error (&error);
   }
 
 done:
-  e_data_book_respond_create (closure->book, closure->opid, status, econtact);
+  if (status == E_DATA_BOOK_STATUS_SUCCESS)
+  {
+    GSList contacts;
+
+    contacts.data = econtact;
+    contacts.next = NULL;
+
+    e_data_book_respond_create_contacts (closure->book, closure->opid, NULL,
+                                         &contacts);
+  }
+  else
+  {
+    e_data_book_respond_create_contacts (closure->book, closure->opid,
+                                         e_data_book_create_error(status, NULL),
+                                         NULL);
+  }
 
   if (contact)
     e_book_backend_tp_contact_unref (contact);
@@ -2890,7 +2890,7 @@ e_book_backend_tp_create_contact (EBookBackend *backend, EDataBook *book,
   g_idle_add (create_contact_idle_cb, closure);
 }
 
-typedef struct 
+typedef struct
 {
   EBookBackend *backend;
   GSList *econtacts; /* GSList of EContact* */
@@ -2905,15 +2905,15 @@ create_contacts_idle_cb (gpointer userdata)
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (closure->backend);
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
   GSList *econtact_in;
-  GList *econtacts = NULL;
-  GNOME_Evolution_Addressbook_CallStatus status = GNOME_Evolution_Addressbook_Success;
+  GSList *econtacts = NULL;
+  EDataBookStatus status = E_DATA_BOOK_STATUS_SUCCESS;
   GError *error = NULL;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contacts cannot "
         "be created");
-    status = GNOME_Evolution_Addressbook_OtherError;
+    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
     goto done;
   }
 
@@ -2921,27 +2921,31 @@ create_contacts_idle_cb (gpointer userdata)
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = GNOME_Evolution_Addressbook_NoSpace;
+    status = E_DATA_BOOK_STATUS_NO_SPACE;
     goto done;
   }
 
   econtact_in = closure->econtacts;
+
   while (econtact_in)
   {
     EBookBackendTpContact *contact;
 
     contact = run_create_contact (backend, econtact_in->data, &error);
+
     if (contact)
     {
-      EContact *econtact = e_book_backend_tp_contact_to_econtact (contact,
-          priv->vcard_field, priv->profile_name);
-      econtacts = g_list_prepend (econtacts, econtact);
+      EContact *econtact = e_book_backend_tp_contact_to_econtact (
+            contact, priv->vcard_field, priv->profile_name);
+
+      econtacts = g_slist_prepend (econtacts, econtact);
       e_book_backend_tp_contact_unref (contact);
-    } else {
-      g_list_foreach (econtacts, (GFunc)g_object_unref, NULL);
-      g_list_free (econtacts);
+    }
+    else
+    {
+      g_slist_free_full (econtacts, g_object_unref);
       econtacts = NULL;
-      status = GNOME_Evolution_Addressbook_OtherError;
+      status = E_DATA_BOOK_STATUS_OTHER_ERROR;
       g_clear_error (&error);
       break;
     }
@@ -2950,15 +2954,14 @@ create_contacts_idle_cb (gpointer userdata)
   }
 
 done:
-  e_data_book_respond_create_contacts (closure->book, closure->opid, status,
-      econtacts);
+  e_data_book_respond_create_contacts (closure->book, closure->opid,
+                                       e_data_book_create_error(status, NULL),
+                                       econtacts);
 
   g_object_unref (closure->book);
 
-  g_slist_foreach (closure->econtacts, (GFunc)g_object_unref, NULL);
-  g_slist_free (closure->econtacts);
-  g_list_foreach (econtacts, (GFunc)g_object_unref, NULL);
-  g_list_free (econtacts);
+  g_slist_free_full (closure->econtacts, g_object_unref);
+  g_slist_free_full (econtacts, g_object_unref);
   g_object_unref (closure->backend);
   g_free (closure);
 
@@ -3126,38 +3129,38 @@ remove_contacts_idle_cb (gpointer userdata)
   RemoveMembersClosure *closure = userdata;
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (closure->backend);
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
-  GNOME_Evolution_Addressbook_CallStatus status;
+  EDataBookStatus status;
   EBookBackendTpContact *contact = NULL;
   EBookBackendTpClStatus tpcl_status;
   GArray *contacts_to_update = NULL;
-  GList *ids_removed = NULL;
+  GSList *ids_removed = NULL;
   GError *error = NULL;
   GList *l = NULL;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contacts cannot "
-        "be removed");
-    status = GNOME_Evolution_Addressbook_OtherError;
+                "be removed");
+    status = E_DATA_BOOK_STATUS_NOT_OPENED;
     goto done;
   }
 
   if (!priv->tpdb)
   {
-    status = BookRemoved;
+    status = E_DATA_BOOK_STATUS_BOOK_REMOVED;
     goto done;
   }
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = GNOME_Evolution_Addressbook_NoSpace;
+    status = E_DATA_BOOK_STATUS_NO_SPACE;
     goto done;
   }
 
   notify_remotely_updated_contacts_and_complete (backend);
   flush_db_updates (backend);
 
-  status = GNOME_Evolution_Addressbook_Success;
+  status = E_DATA_BOOK_STATUS_SUCCESS;
   tpcl_status = e_book_backend_tp_cl_get_status (priv->tpcl);
 
   /* Removing contacts is really easy. We basically just want to zero the
@@ -3174,7 +3177,7 @@ remove_contacts_idle_cb (gpointer userdata)
 
     if (really_remove)
     {
-      ids_removed = g_list_prepend (ids_removed, g_strdup (contact->uid));
+      ids_removed = g_slist_prepend (ids_removed, g_strdup (contact->uid));
       if (!contacts_to_update)
         contacts_to_update = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
       g_array_append_val (contacts_to_update, contact);
@@ -3182,8 +3185,9 @@ remove_contacts_idle_cb (gpointer userdata)
   }
 
 done:
-  e_data_book_respond_remove_contacts (closure->book, closure->opid, status,
-      ids_removed);
+  e_data_book_respond_remove_contacts (closure->book, closure->opid,
+                                       e_data_book_create_error(status, NULL),
+                                       ids_removed);
 
   /* Now update the database */
   if (contacts_to_update)
@@ -3199,16 +3203,10 @@ done:
     g_array_free (contacts_to_update, TRUE);
   }
 
-  while (ids_removed)
-  {
-    g_free (ids_removed->data);
-    ids_removed = g_list_delete_link (ids_removed, ids_removed);
-  }
-
+  g_slist_free_full (ids_removed, g_free);
   g_object_unref (closure->backend);
   g_object_unref (closure->book);
-  g_list_foreach (closure->id_list, (GFunc) g_free, NULL);
-  g_list_free (closure->id_list);
+  g_list_free_full (closure->id_list, g_free);
   g_free (closure);
 
   return FALSE;
@@ -3216,7 +3214,7 @@ done:
 
 static void
 e_book_backend_tp_remove_contacts (EBookBackend *backend, EDataBook *book,
-    guint32 opid, GList *id_list)
+                                   guint32 opid, GList *id_list)
 {
   RemoveMembersClosure *closure = NULL;
   GList *l = NULL;
@@ -3264,23 +3262,24 @@ get_contact_idle_cb (gpointer userdata)
 {
   GetContactClosure *closure = userdata;
   EBookBackendTpPrivate *priv = GET_PRIVATE (closure->backend);
-  GNOME_Evolution_Addressbook_CallStatus status =
-      GNOME_Evolution_Addressbook_OtherError;
+  EDataBookStatus status = E_DATA_BOOK_STATUS_OTHER_ERROR;
   EBookBackendTpContact *contact;
   EContact *ec;
   gchar *vcard = NULL;
 
   notify_remotely_updated_contacts_and_complete (closure->backend);
 
-  if (closure->uid == NULL || closure->uid == '\0') {
+  if (closure->uid == NULL || closure->uid[0] == '\0')
+  {
     WARNING ("Empty contact id");
     goto done;
   }
 
   contact = g_hash_table_lookup (priv->uid_to_contact, closure->uid);
 
-  if (!contact) {
-    status = GNOME_Evolution_Addressbook_ContactNotFound;
+  if (!contact)
+  {
+    status = E_DATA_BOOK_STATUS_CONTACT_NOT_FOUND;
     goto done;
   }
 
@@ -3289,18 +3288,20 @@ get_contact_idle_cb (gpointer userdata)
   vcard = e_vcard_to_string (E_VCARD (ec), EVC_FORMAT_VCARD_30);
   g_object_unref (ec);
 
-  if (vcard == NULL || vcard[0] == '\0') {
+  if (vcard == NULL || vcard[0] == '\0')
+  {
     WARNING ("Could not generate vcard from record.");
     g_free (vcard);
     vcard = NULL;
     goto done;
   }
 
-  status = GNOME_Evolution_Addressbook_Success;
+  status = E_DATA_BOOK_STATUS_SUCCESS;
 
 done:
-  e_data_book_respond_get_contact (closure->book, closure->opid, status,
-      vcard);
+  e_data_book_respond_get_contact (closure->book, closure->opid,
+                                   e_data_book_create_error(status, NULL),
+                                   vcard);
 
   g_object_unref (closure->backend);
   g_object_unref (closure->book);
@@ -3337,17 +3338,16 @@ get_contact_list_idle_cb (gpointer userdata)
 {
   GetContactListClosure *closure = userdata;
   EBookBackendTpPrivate *priv = GET_PRIVATE (closure->backend);
-  GNOME_Evolution_Addressbook_CallStatus status =
-    GNOME_Evolution_Addressbook_OtherError;
+  EDataBookStatus status = E_DATA_BOOK_STATUS_OTHER_ERROR;
   EBookBackendSExp *sexp = NULL;
   gboolean get_all = FALSE;
   GHashTableIter iter;
   gpointer contact_pointer;
-  GList *contact_list = NULL;
+  GSList *contact_list = NULL;
 
   notify_remotely_updated_contacts_and_complete (closure->backend);
 
-  if (closure->query == NULL || closure->query == '\0') {
+  if (closure->query == NULL || closure->query[0] == '\0') {
     WARNING ("Empty query");
     goto done;
   }
@@ -3383,19 +3383,19 @@ get_contact_list_idle_cb (gpointer userdata)
       continue;
     }
 
-    if (get_all || e_book_backend_sexp_match_vcard (sexp, vcard)) {
-      contact_list = g_list_prepend (contact_list, vcard);
-    }
+    if (get_all || e_book_backend_sexp_match_vcard (sexp, vcard))
+      contact_list = g_slist_prepend (contact_list, vcard);
   }
 
-  status = GNOME_Evolution_Addressbook_Success;
+  status = E_DATA_BOOK_STATUS_SUCCESS;
 
 done:
-  e_data_book_respond_get_contact_list (closure->book, closure->opid, status,
-      contact_list);
+  e_data_book_respond_get_contact_list (closure->book, closure->opid,
+                                        e_data_book_create_error(status, NULL),
+                                        contact_list);
 
   /* elements are released by libedata-book */
-  g_list_free (contact_list);
+  g_slist_free (contact_list);
 
   if (sexp)
     g_object_unref (sexp);
@@ -3446,68 +3446,6 @@ e_book_backend_tp_modify_contacts (EBookBackend *backend, EDataBook *book, guint
   unsupported_method ("modify_contacts");
 }
 
-typedef struct
-{
-  EBookBackend *backend;
-  EDataBook *book;
-  guint32 opid;
-} RemoveClosure;
-
-static gboolean
-remove_idle_cb (gpointer userdata)
-{
-  RemoveClosure *closure = (RemoveClosure *)userdata;
-  EBookBackendTp *backend = E_BOOK_BACKEND_TP (closure->backend);
-  EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
-  GNOME_Evolution_Addressbook_CallStatus status;
-  GError *error = NULL;
-
-  if (!priv->tpdb)
-  {
-    status = BookRemoved;
-    goto done;
-  }
-
-  notify_remotely_updated_contacts_and_complete (backend);
-  flush_db_updates (backend);
-
-  if (e_book_backend_tp_db_delete (priv->tpdb, &error)) {
-    status = GNOME_Evolution_Addressbook_Success;
-  } else {
-    WARNING ("Error whilst deleting the db: %s",
-        error ? error->message : "unknown error");
-    g_clear_error (&error);
-    status = GNOME_Evolution_Addressbook_OtherError;
-  }
-
-  g_object_unref (priv->tpdb);
-  priv->tpdb = NULL;
-
-done:
-  e_data_book_respond_remove (closure->book, closure->opid, status); 
-
-  g_object_unref (closure->book);
-  g_object_unref (closure->backend);
-
-  g_free (closure);
-
-  return FALSE;
-}
-
-static void
-e_book_backend_tp_remove (EBookBackend *backend, EDataBook *book, guint32 opid)
-{
-  RemoveClosure *closure;
-
-  closure = g_new0 (RemoveClosure, 1);
-
-  closure->backend = g_object_ref (backend);
-  closure->book = g_object_ref (book);
-  closure->opid = opid;
-
-  g_idle_add (remove_idle_cb, closure);
-}
-
 static void
 e_book_backend_tp_set_view_sort_order (EBookBackend *backend, EDataBookView *book_view, const gchar *query_term)
 {
@@ -3546,8 +3484,9 @@ e_book_backend_tp_class_init (EBookBackendTpClass *klass)
   object_class->dispose = e_book_backend_tp_dispose;
   object_class->finalize = e_book_backend_tp_finalize;
 
-  backend_class->load_source = e_book_backend_tp_load_source;
-  backend_class->get_static_capabilities = e_book_backend_tp_get_static_capabilities;
+  backend_class->open_sync = e_book_backend_tp_open_sync;
+  backend_class->get_backend_property = e_book_backend_tp_get_backend_property;
+#if 0
   backend_class->start_book_view = e_book_backend_tp_start_book_view;
   backend_class->stop_book_view = e_book_backend_tp_stop_book_view;
   backend_class->cancel_operation = e_book_backend_tp_cancel_operation;
@@ -3570,7 +3509,7 @@ e_book_backend_tp_class_init (EBookBackendTpClass *klass)
   backend_class->remove = e_book_backend_tp_remove;
   backend_class->set_view_sort_order = e_book_backend_tp_set_view_sort_order;
   backend_class->sync = e_book_backend_tp_sync;
-
+#endif
   /* There should be exactly one async OR sync implementation of each function,
    * so we don't create stubs for the sync functions here. */
 
