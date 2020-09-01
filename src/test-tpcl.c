@@ -26,7 +26,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <telepathy-glib/dbus.h>
 #include "e-book-backend-tp-cl.h"
 #include "e-book-backend-tp-contact.h"
 
@@ -147,23 +146,19 @@ main (gint argc, gchar **argv)
   EBookBackendTpCl *tpcl;
   const gchar *account_name;
   gchar *object_path;
-  DBusGConnection *bus;
   TpDBusDaemon *dbus_daemon;
-  McAccount *account;
+  TpAccount *account;
 
   if (argc > 1)
     account_name = argv[1];
   else
     account_name = "gabble/jabber/account1";
 
-  g_type_init ();
-
   tpcl = e_book_backend_tp_cl_new ();
 
-  object_path = g_strconcat (MC_ACCOUNT_DBUS_OBJECT_BASE, account_name, NULL);
-  bus = tp_get_bus ();
-  dbus_daemon = tp_dbus_daemon_new (bus);
-  account = mc_account_new (dbus_daemon, object_path);
+  object_path = g_strconcat (TP_ACCOUNT_OBJECT_PATH_BASE, account_name, NULL);
+  dbus_daemon = tp_dbus_daemon_dup (NULL);
+  account = tp_account_new (dbus_daemon, object_path, NULL);
   g_object_unref (dbus_daemon);
   g_free (object_path);
  
@@ -176,7 +171,7 @@ main (gint argc, gchar **argv)
     NULL);
     g_signal_connect (tpcl, "aliases-changed",
     G_CALLBACK (aliases_changed_cb), NULL);
-    g_signal_connect (tpcl, "avatar-changed",
+    g_signal_connect (tpcl, "avatar-data-changed",
     G_CALLBACK (avatar_changed_cb), NULL);
     g_signal_connect (tpcl, "presences-changed",
     G_CALLBACK (presences_changed_cb), NULL);

@@ -31,8 +31,6 @@
 #include <telepathy-glib/dbus.h>
 #include <telepathy-glib/defs.h>
 #include <telepathy-glib/interfaces.h>
-#include <libmcclient/dbus-api.h>
-#include <libmcclient/mc-account.h>
 #include "test-utils.h"
 
 /* This callback may be triggered any number of times; we don't assume all

@@ -25,8 +25,8 @@
 #define _E_BOOK_BACKEND_TP_CL
 
 #include <glib-object.h>
-#include <libmcclient/mc-account.h>
 #include "e-book-backend-tp-types.h"
+#include <telepathy-glib/telepathy-glib.h>
 
 G_BEGIN_DECLS
 
@@ -92,7 +92,7 @@ GQuark e_book_backend_tp_cl_error (void);
 
 EBookBackendTpCl *e_book_backend_tp_cl_new (void);
 gboolean e_book_backend_tp_cl_load (EBookBackendTpCl *tpcl, 
-    McAccount *account, GError **error);
+    TpAccount *account, GError **error);
 EBookBackendTpClStatus e_book_backend_tp_cl_get_status (EBookBackendTpCl *tpcl);
 
 gboolean e_book_backend_tp_cl_get_members (EBookBackendTpCl *tpcl, 

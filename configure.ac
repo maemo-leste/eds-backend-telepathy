@@ -21,12 +21,8 @@ AC_SUBST(EXTENSIONDIR, $extensiondir)
 PKG_CHECK_MODULES(GIO, gio-2.0)
 PKG_CHECK_MODULES(DBUS, dbus-glib-1)
 PKG_CHECK_MODULES(EDATABOOK, libedata-book-1.2 libebook-1.2)
-PKG_CHECK_MODULES(TP,
-                  [
-                    telepathy-glib >= 0.7.13
-                    libmcclient >= 5.0.beta46
-                  ])
-PKG_CHECK_MODULES(TPR, rtcom-telepathy-glib)
+PKG_CHECK_MODULES(TP, telepathy-glib)
+#PKG_CHECK_MODULES(TPR, rtcom-telepathy-glib)
 PKG_CHECK_MODULES(SQLITE, sqlite3)
 PKG_CHECK_MODULES([MCE], mce >= 1.5)
 

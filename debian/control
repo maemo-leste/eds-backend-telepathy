@@ -3,7 +3,7 @@ Section: base
 Priority: optional
 Maintainer: Jörgen Scheibengruber <Jorgen.scheibengruber@nokia.com>
 Uploaders: Marco Barisione <marco.barisione@collabora.co.uk>, Mathias Hasselmann <mathias.hasselmann@maemo.org>
-Build-Depends: debhelper (>= 5.0.0), cdbs, intltool (>= 0.28-2), libdbus-glib-1-dev (>= 0.73-0osso2), libebook-dev, libedata-book-dev, libedataserver-dev, evolution-data-server-dev (>=1.4.2.1-20090515), libtelepathy-glib-dev, libmcclient-dev (>=5.0.beta46), libsqlite3-dev, librtcom-telepathy-glib-dev (>=0.1.22), mce-dev
+Build-Depends: debhelper (>= 5.0.0), cdbs, intltool (>= 0.28-2), libdbus-glib-1-dev, libebook1.2-dev, libedata-book1.2-dev, libedataserver1.2-dev, evolution-data-server-dev, libtelepathy-glib-dev, libsqlite3-dev, mce-dev
 Standards-Version: 3.7
 
 Package: evolution-data-server-addressbook-backend-telepathy

@@ -33,7 +33,6 @@
 #include <dbus/dbus-glib-lowlevel.h>
 #include <mce/dbus-names.h>
 #include <telepathy-glib/dbus.h>
-#include <libmcclient/mc-profile.h>
 #include <libedata-book/e-data-book-view.h>
 #include <gio/gio.h>
 #include <telepathy-glib/util.h>
@@ -2575,14 +2574,13 @@ modify_contact_idle_cb (gpointer userdata)
 
     if (contact)
     {
+      /* FIXME - do not call e_vcard_to_string if tmp is not going to be
+         printed */
+      gchar *tmp =
+          e_vcard_to_string (E_VCARD (closure->contact), EVC_FORMAT_VCARD_30);
       MESSAGE ("Modifying contact: %s", contact->name);
-      if (e_log_will_print (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_DEBUG))
-      {
-        gchar *tmp;
-        tmp = e_vcard_to_string (E_VCARD (closure->contact), EVC_FORMAT_VCARD_30);
-        DEBUG ("%s", tmp);
-        g_free (tmp);
-      }
+      DEBUG ("%s", tmp);
+      g_free (tmp);
 
       /* update our contact in place, noting any changes */
       e_book_backend_tp_contact_update_from_econtact (contact, 

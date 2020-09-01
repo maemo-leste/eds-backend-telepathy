@@ -28,13 +28,13 @@
 #define USERNAME_VALID_CHARS \
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-extern const gchar const *ALIASES[];
+extern const gchar *const ALIASES[];
 
 typedef struct
 {
   GMainLoop *loop;
   gchar *account_name;
-  McAccount *account;
+  TpAccount *account;
   EBookBackendTpCl *tpcl;
   GHashTable *name_to_contact_hash;
 } TestUserData;

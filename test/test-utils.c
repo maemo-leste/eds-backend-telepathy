@@ -25,7 +25,7 @@
 
 /* TODO: this list could be much better (especially longer, include non-ASCII
  * characters, perhaps generated) */
-const gchar const *ALIASES[] =
+const gchar *const ALIASES[] =
 { 
   "Jenny Serra",
   "Brandon Cooper",

@@ -24,20 +24,19 @@
 #define _E_BOOK_BACKEND_TP_LOG_H__
 
 #include <glib.h>
-#include <libedataserver/e-log.h>
 
-extern gint e_book_backend_tp_log_domain_id;
+extern const gchar *e_book_backend_tp_log_domain_id;
 
 #define DEBUG(format, ...) \
-  E_LOG (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_DEBUG, format, \
+  g_log (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_DEBUG, format, \
       ##__VA_ARGS__)
 
 #define MESSAGE(format, ...) \
-  E_LOG (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_MESSAGE, format, \
+  g_log (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_MESSAGE, format, \
       ##__VA_ARGS__)
 
 #define WARNING(format, ...) \
-  E_LOG (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_WARNING, format, \
+  g_log (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_WARNING, format, \
       ##__VA_ARGS__)
 
 #endif /* _E_BOOK_BACKEND_TP_LOG_H_ */

@@ -27,17 +27,10 @@
 #include <telepathy-glib/contact.h>
 #include <telepathy-glib/interfaces.h>
 #include <telepathy-glib/util.h>
-#include <rtcom-telepathy-glib/extensions.h>
 
 #include "e-book-backend-tp-contact.h"
 #include "e-book-backend-tp-cl.h"
 #include "e-book-backend-tp-log.h"
-
-G_DEFINE_TYPE (EBookBackendTpCl, e_book_backend_tp_cl, G_TYPE_OBJECT)
-
-#define GET_PRIVATE(o) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((o), E_TYPE_BOOK_BACKEND_TP_CL, EBookBackendTpClPrivate))
-
 
 typedef struct _EBookBackendTpClContactList EBookBackendTpClContactList;
 
@@ -52,13 +45,18 @@ typedef struct _EBookBackendTpClPrivate EBookBackendTpClPrivate;
 struct _EBookBackendTpClPrivate
 {
   const gchar *account_name;
-  McAccount *account;
+  TpAccount *account;
   TpConnection *conn;
   EBookBackendTpClStatus status;
   EBookBackendTpClContactList *contact_list_channels[CL_LAST_LIST];
   /* maps TpHandle -> (EBookBackendTpContact*) */
   GHashTable *contacts_hash;
 };
+
+G_DEFINE_TYPE_WITH_PRIVATE (EBookBackendTpCl, e_book_backend_tp_cl, G_TYPE_OBJECT)
+
+#define GET_PRIVATE(o) \
+  ((EBookBackendTpClPrivate *)e_book_backend_tp_cl_get_instance_private((EBookBackendTpCl *)o))
 
 enum
 {
@@ -79,10 +77,11 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 static void e_book_backend_tp_cl_set_status (EBookBackendTpCl *tpcl, 
     EBookBackendTpClStatus status);
-static void connection_status_changed_cb (McAccount *account,
-    TpConnectionStatus status, TpConnectionStatusReason reason,
-    gpointer userdata);
-
+static void connection_status_changed_cb (TpAccount *account, guint old_status,
+                                          guint new_status, guint reason,
+                                          gchar *dbus_error_name,
+                                          GHashTable *details,
+                                          gpointer user_data);
 static void contact_info_changed_cb (TpConnection *conn, guint handle, 
     const GPtrArray *handle_contactinfo, gpointer userdata, GObject *weak_object);
 static void get_contact_info_for_members_cb (TpConnection *conn, 
@@ -174,8 +173,6 @@ static void
 e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
-
-  g_type_class_add_private (klass, sizeof (EBookBackendTpClPrivate));
 
   object_class->get_property = e_book_backend_tp_cl_get_property;
   object_class->set_property = e_book_backend_tp_cl_set_property;
@@ -274,9 +271,6 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
       g_cclosure_marshal_VOID__POINTER,
       G_TYPE_NONE,
       1, G_TYPE_POINTER);
-  
-  /* FIXME: For ContactInfo interface */
-  rtcom_tp_cli_init ();
 }
 
 static void
@@ -550,8 +544,11 @@ remove_invalid_contacts (EBookBackendTpCl *tpcl, GArray *array)
   }
 }
 
+static void get_contact_capabilities_for_members_cb(TpConnection *conn,
+    GHashTable *caps, const GError *error, gpointer user_data,
+    GObject *weak_object);
 static void get_capabilities_for_members_cb (TpConnection *conn,
-    const GPtrArray *caps, const GError *error, gpointer userdata, 
+    const GPtrArray *caps, const GError *error, gpointer userdata,
     GObject *weak_object);
 
 /* Inspect the features that are still drafts and are not yet supported by
@@ -574,24 +571,38 @@ inspect_additional_features (EBookBackendTpCl *tpcl, GArray *contacts)
     g_array_append_val (handles, contact->handle);
   }
 
-  DEBUG ("getting capabilities for all members");
-  /* FIXME: ContactCapabilities is still a draft so it's not yet supported by
-   * tp-glib. Switch to use it when it's ready */
-  tp_cli_connection_interface_capabilities_call_get_capabilities (priv->conn,
-      -1,
-      handles,
-      get_capabilities_for_members_cb,
-      NULL,
-      NULL,
-      (GObject *)tpcl);
+  if (tp_proxy_has_interface_by_id (priv->conn,
+        TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_CAPABILITIES))
+  {
+    DEBUG ("getting contact capabilities for all members");
+    tp_cli_connection_interface_contact_capabilities_call_get_contact_capabilities (
+        priv->conn,
+        -1,
+        handles,
+        get_contact_capabilities_for_members_cb,
+        NULL,
+        NULL,
+        (GObject *)tpcl);
+  }
+  else if (tp_proxy_has_interface_by_id (priv->conn,
+        TP_IFACE_QUARK_CONNECTION_INTERFACE_CAPABILITIES))
+  {
+    DEBUG ("getting capabilities for all members");
+    tp_cli_connection_interface_capabilities_call_get_capabilities (
+        priv->conn,
+        -1,
+        handles,
+        get_capabilities_for_members_cb,
+        NULL,
+        NULL,
+        (GObject *)tpcl);
+  }
 
-  /* FIXME: ContactInfo is still a draft. Switch to use tp-glib API when
-   * it's ready */
   if (tp_proxy_has_interface_by_id (priv->conn, 
-        RTCOM_TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_INFO))
+        TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_INFO))
   {
     DEBUG ("getting contact info for all members");
-    rtcom_tp_cli_connection_interface_contact_info_call_get_contact_info (
+    tp_cli_connection_interface_contact_info_call_get_contact_info (
         priv->conn,
         -1,
         handles,
@@ -995,6 +1006,8 @@ request_handles_for_contact_list_cb (TpConnection *conn, const GArray *handles,
 
 static void capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps, 
     gpointer userdata, GObject *weak_object);
+static void contact_capabilities_changed_cb(TpConnection *conn,
+    GHashTable *caps, gpointer user_data, GObject *weak_object);
 
 static void
 aliases_changed_cb (TpConnection *conn, const GPtrArray *new_aliases, 
@@ -1015,19 +1028,12 @@ aliases_changed_cb (TpConnection *conn, const GPtrArray *new_aliases,
 
   for (i = 0; i < new_aliases->len; i++)
   {
-    GValueArray *alias_pair = NULL;
-    GValue *value = NULL;
     TpHandle contact_handle;
     const gchar *new_alias = NULL;
 
-    alias_pair = g_ptr_array_index (new_aliases, i);
+    tp_value_array_unpack(g_ptr_array_index (new_aliases, i),
+                          2, &contact_handle, &new_alias);
 
-    value = g_value_array_get_nth (alias_pair, 0);
-    contact_handle = g_value_get_uint (value);
-
-    value = g_value_array_get_nth (alias_pair, 1);
-    new_alias = g_value_get_string (value);
-    
     contact = g_hash_table_lookup (priv->contacts_hash,
         GUINT_TO_POINTER (contact_handle));
 
@@ -1135,7 +1141,6 @@ presences_changed_cb (TpConnection *conn, GHashTable *presences,
   GArray *contacts_changed = NULL;
   GValueArray *values = NULL;
   TpHandle handle;
-  const GValue *v;
 
   if (!verify_is_connected (tpcl, NULL))
     return;
@@ -1155,16 +1160,19 @@ presences_changed_cb (TpConnection *conn, GHashTable *presences,
 
     if (values && contact)
     {
-      v = g_value_array_get_nth (values, 0);
-      contact->generic_status = presence_code_to_string (g_value_get_uint (v));
+      const gchar *status;
+      const gchar *status_message;
+      TpConnectionPresenceType type;
+
+      tp_value_array_unpack(values, 3, &type, &status, &status_message);
+
+      contact->generic_status = presence_code_to_string (type);
 
       g_free (contact->status);
-      v = g_value_array_get_nth (values, 1);
-      contact->status = g_value_dup_string (v);
+      contact->status = g_strdup (status);
 
       g_free (contact->status_message);
-      v = g_value_array_get_nth (values, 2);
-      contact->status_message = g_value_dup_string (v);
+      contact->status_message = g_strdup (status_message);
 
       g_array_append_val (contacts_changed, contact);
     } else {
@@ -1245,18 +1253,20 @@ get_contact_list_channels (EBookBackendTpCl *tpcl)
 }
 
 static void
-tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userdata)
+tp_connection_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
-  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (userdata);
-  EBookBackendTpClPrivate *priv = NULL;
+  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (user_data);
+  EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
+  GError *error = NULL;
   GError *error_connect = NULL;
 
-  priv = GET_PRIVATE (tpcl);
-
-  if (error)
+  if (!tp_proxy_prepare_finish (object, res, &error))
   {
-    WARNING ("Error when getting connection: %s", error->message);
-  } else if (verify_is_connected (tpcl, NULL)) {
+    WARNING ("Error when waiting for a connection to be ready: %s",
+             error->message);
+  }
+  else if (verify_is_connected (tpcl, NULL))
+  {
     DEBUG ("Telepathy connection for %s ready", priv->account_name);
 
     /* set up signal handlers */
@@ -1271,7 +1281,8 @@ tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userda
 
     if (error_connect)
     {
-      WARNING ("Failed to connect to AliasesChanged signal");
+      WARNING ("Failed to connect to AliasesChanged signal - %s",
+               error_connect->message);
 
       g_clear_error (&error_connect);
     }
@@ -1286,7 +1297,8 @@ tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userda
 
     if (error_connect)
     {
-      WARNING ("Failed to connect to PresencesChanged signal");
+      WARNING ("Failed to connect to PresencesChanged signal - %s",
+               error_connect->message);
 
       g_clear_error (&error_connect);
     }
@@ -1301,7 +1313,8 @@ tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userda
 
     if (error_connect)
     {
-      WARNING ("Failed to connect to AvatarUpdated signal");
+      WARNING ("Failed to connect to AvatarUpdated signal - %s",
+               error_connect->message);
 
       g_clear_error (&error_connect);
     }
@@ -1316,31 +1329,56 @@ tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userda
 
     if (error_connect)
     {
-      WARNING ("Failed to connect to AvatarRetrieved signal");
+      WARNING ("Failed to connect to AvatarRetrieved signal - %s",
+               error_connect->message);
 
       g_clear_error (&error_connect);
     }
 
-    tp_cli_connection_interface_capabilities_connect_to_capabilities_changed (
+
+    if (tp_proxy_has_interface_by_id (priv->conn,
+          TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_CAPABILITIES))
+    {
+      tp_cli_connection_interface_contact_capabilities_connect_to_contact_capabilities_changed (
         priv->conn,
-        capabilities_changed_cb,
+        contact_capabilities_changed_cb,
         NULL,
         NULL,
         (GObject *)tpcl,
         &error_connect);
 
-    if (error_connect)
-    {
-      WARNING ("Failed to connect to CapabilitiesChanged signal");
+      if (error_connect)
+      {
+        WARNING ("Failed to connect to ContactCapabilitiesChanged signal - %s",
+                 error_connect->message);
 
-      g_clear_error (&error_connect);
+        g_clear_error (&error_connect);
+      }
+    }
+    else if (tp_proxy_has_interface_by_id (priv->conn,
+          TP_IFACE_QUARK_CONNECTION_INTERFACE_CAPABILITIES))
+    {
+      tp_cli_connection_interface_capabilities_connect_to_capabilities_changed (
+          priv->conn,
+          capabilities_changed_cb,
+          NULL,
+          NULL,
+          (GObject *)tpcl,
+          &error_connect);
+
+      if (error_connect)
+      {
+        WARNING ("Failed to connect to CapabilitiesChanged signal - %s",
+                 error_connect->message);
+
+        g_clear_error (&error_connect);
+      }
     }
 
-    /* FIXME: ContactInfo is still a draft. Switch to use tp-glib API when it's ready */
-    if (tp_proxy_has_interface_by_id (priv->conn, 
-        RTCOM_TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_INFO)) 
+    if (tp_proxy_has_interface_by_id (priv->conn,
+        TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_INFO))
     {
-      rtcom_tp_cli_connection_interface_contact_info_connect_to_contactinfochanged (
+      tp_cli_connection_interface_contact_info_connect_to_contact_info_changed (
           priv->conn,
           contact_info_changed_cb,
           NULL,
@@ -1350,7 +1388,8 @@ tp_connection_ready_cb (TpConnection *conn, const GError *error, gpointer userda
       
       if (error_connect)
       {
-        WARNING ("Failed to connect to ContactInfoChanged signal");
+        WARNING ("Failed to connect to ContactInfoChanged signal - %s",
+                 error_connect->message);
 
         g_clear_error (&error_connect);
       }
@@ -1374,21 +1413,13 @@ _setup_tp_connection (EBookBackendTpCl *tpcl)
 
   if (!priv->conn)
   {
-    const gchar *connection_path;
-    DBusGConnection *bus;
-    TpDBusDaemon *dbus_daemon;
-   
-    bus = tp_get_bus ();
-    dbus_daemon = tp_dbus_daemon_new (bus);
-    connection_path = mc_account_get_connection_path (priv->account);
-    priv->conn = tp_connection_new (dbus_daemon, NULL, connection_path,
-        &error);
-    g_object_unref (dbus_daemon);
+    priv->conn = tp_account_get_connection(priv->account);
 
     if (priv->conn)
     {
-      tp_connection_call_when_ready (priv->conn, 
-        (TpConnectionWhenReadyCb)tp_connection_ready_cb, g_object_ref (tpcl));
+      priv->conn = g_object_ref(priv->conn);
+      tp_proxy_prepare_async (priv->conn, NULL,
+                              tp_connection_ready_cb, g_object_ref (tpcl));
     } else {
       WARNING ("Error when getting connection: %s",
           error ? error->message : "unknown");
@@ -1398,15 +1429,17 @@ _setup_tp_connection (EBookBackendTpCl *tpcl)
 }
 
 static void
-connection_status_changed_cb (McAccount *account, TpConnectionStatus status,
-    TpConnectionStatusReason reason, gpointer userdata)
+connection_status_changed_cb (TpAccount *account, guint old_status,
+                              guint new_status, guint reason,
+                              gchar *dbus_error_name, GHashTable *details,
+                              gpointer user_data)
 {
-  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (userdata);
+  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (user_data);
 
-  DEBUG ("status changed to %d for reason %d", status, reason);
+  DEBUG ("status changed to %d for reason %d", new_status, reason);
 
   /* Statuses other than CONNECTED are offline for us */
-  if (status == TP_CONNECTION_STATUS_CONNECTED)
+  if (new_status == TP_CONNECTION_STATUS_CONNECTED)
   {
     _setup_tp_connection (tpcl);
   } else {
@@ -1417,13 +1450,15 @@ connection_status_changed_cb (McAccount *account, TpConnectionStatus status,
 }
 
 static void
-account_ready_cb (McAccount *account, const GError *error, gpointer userdata)
+account_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
-  EBookBackendTpCl *tpcl = userdata;
+  TpAccount *account = (TpAccount *)object;
+  EBookBackendTpCl *tpcl = user_data;
   EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl); 
   TpConnectionStatus connection_status;
+  GError *error = NULL;
 
-  if (error)
+  if (!tp_proxy_prepare_finish (object, res, &error))
   {
     WARNING ("Error when waiting for an account to be ready: %s",
         error->message);
@@ -1433,18 +1468,18 @@ account_ready_cb (McAccount *account, const GError *error, gpointer userdata)
 
   g_assert (account == priv->account);
 
-  connection_status = mc_account_get_connection_status (account);
+  connection_status = tp_account_get_connection_status (account, NULL);
   if (connection_status == TP_CONNECTION_STATUS_CONNECTED)
     _setup_tp_connection (tpcl);
 
-  g_signal_connect (account, "connection-status-changed",
+  g_signal_connect (account, "status-changed",
       G_CALLBACK (connection_status_changed_cb), tpcl);
 
   g_object_unref (tpcl);
 }
 
 gboolean
-e_book_backend_tp_cl_load (EBookBackendTpCl *tpcl, McAccount *account, 
+e_book_backend_tp_cl_load (EBookBackendTpCl *tpcl, TpAccount *account,
     GError **error_out)
 {
   EBookBackendTpClPrivate *priv = NULL;
@@ -1458,14 +1493,15 @@ e_book_backend_tp_cl_load (EBookBackendTpCl *tpcl, McAccount *account,
   g_assert (priv->account == NULL);
 
   priv->account = g_object_ref (account);
-  priv->account_name = priv->account->name;
+  priv->account_name = tp_account_get_path_suffix(account);
 
   MESSAGE ("starting load process for %s", 
       priv->account_name);
 
   /* We have to ref tpcl to be sure we are not destroyed before the callback is
    * called */
-  mc_account_call_when_ready (priv->account, account_ready_cb, g_object_ref (tpcl));
+  tp_proxy_prepare_async (priv->account, NULL, account_ready_cb,
+                          g_object_ref (tpcl));
 
   return TRUE;
 }
@@ -1658,7 +1694,6 @@ capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps,
 {
   EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
   GArray *capabilities;
-  GValueArray *values;
   ContactCapability *cap;
   guint i = 0;
 
@@ -1670,14 +1705,13 @@ capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps,
 
   for (i = 0; i < caps->len; i++)
   {
-    values = g_ptr_array_index (caps, i);
+    guint old_generic;
+    guint old_specific;
 
     cap = &g_array_index (capabilities, ContactCapability, i);
-
-    cap->handle = g_value_get_uint (g_value_array_get_nth (values, 0));
-    cap->channel_type = g_value_get_string (g_value_array_get_nth (values, 1));
-    cap->generic = g_value_get_uint (g_value_array_get_nth (values, 3));
-    cap->specific = g_value_get_uint (g_value_array_get_nth (values, 5));
+    tp_value_array_unpack(g_ptr_array_index (caps, i), 6,
+                          &cap->handle, &cap->channel_type,  &old_generic,
+                          &cap->generic, &old_specific, cap->specific);
 
     DEBUG ("Capability information received for %d on %s with %x and %x",
         cap->handle, cap->channel_type, cap->generic, cap->specific);
@@ -1687,12 +1721,93 @@ capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps,
   g_array_free (capabilities, TRUE);
 }
 
+static GArray *
+get_contact_capabilities(GHashTable *caps)
+{
+  GHashTableIter iter;
+  gpointer k;
+  GPtrArray *v;
+  guint caps_len;
+  ContactCapability *cap;
+  GArray *capabilities;
+  int idx = 0;
+
+  caps_len = g_hash_table_size(caps);
+  capabilities = g_array_sized_new (TRUE, TRUE,
+                                    sizeof (ContactCapability), caps_len);
+  g_array_set_size (capabilities, caps_len);
+  g_hash_table_iter_init (&iter, caps);
+
+  while (g_hash_table_iter_next (&iter, &k, (gpointer *)&v))
+  {
+    int i;
+
+    cap = &g_array_index (capabilities, ContactCapability, idx++);
+    cap->handle = GPOINTER_TO_UINT(k);
+
+    for (i = 0; i < v->len; i++)
+    {
+      GValueArray *values;
+      int j;
+
+      values = g_ptr_array_index (v, i);
+
+      for (j = 0; j < values->n_values - 1; j++)
+      {
+        GHashTable *asv = g_value_get_boxed (g_value_array_get_nth (values, j));
+
+        cap->channel_type =
+            tp_asv_get_string(asv, TP_PROP_CHANNEL_CHANNEL_TYPE);
+
+        if (!g_strcmp0(cap->channel_type, TP_IFACE_CHANNEL_TYPE_STREAMED_MEDIA))
+        {
+          if (tp_asv_get_boolean(
+                asv, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_AUDIO, NULL))
+          {
+            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_AUDIO;
+          }
+          if (tp_asv_get_boolean(
+                asv, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_VIDEO, NULL))
+          {
+            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_VIDEO;
+          }
+          if (tp_asv_get_boolean(
+                asv,
+                TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_IMMUTABLE_STREAMS, NULL))
+          {
+            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_IMMUTABLE_STREAMS;
+          }
+        }
+      }
+    }
+
+    DEBUG ("Capability information received for %d on %s with %x and %x",
+        cap->handle, cap->channel_type, cap->generic, cap->specific);
+  }
+
+  return capabilities;
+}
+
+static void
+contact_capabilities_changed_cb(TpConnection *conn, GHashTable *caps,
+                                gpointer user_data, GObject *weak_object)
+{
+  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
+  GArray *capabilities;
+
+  if (!verify_is_connected (tpcl, NULL))
+    return;
+
+  capabilities = get_contact_capabilities(caps);
+  update_capabilities (tpcl, capabilities);
+  g_array_free (capabilities, TRUE);
+}
+
 static void 
-get_capabilities_for_members_cb (TpConnection *conn, const GPtrArray *caps, 
+get_capabilities_for_members_cb (TpConnection *conn, const GPtrArray *caps,
     const GError *error, gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
-  GValueArray *values;
   guint i = 0;
   ContactCapability *cap;
   GArray *capabilities;
@@ -1712,19 +1827,38 @@ get_capabilities_for_members_cb (TpConnection *conn, const GPtrArray *caps,
 
   for (i = 0; i < caps->len; i++)
   {
-    values = g_ptr_array_index (caps, i);
-
     cap = &g_array_index (capabilities, ContactCapability, i);
-
-    cap->handle = g_value_get_uint (g_value_array_get_nth (values, 0));
-    cap->channel_type = g_value_get_string (g_value_array_get_nth (values, 1));
-    cap->generic = g_value_get_uint (g_value_array_get_nth (values, 2));
-    cap->specific = g_value_get_uint (g_value_array_get_nth (values, 3));
+    tp_value_array_unpack(g_ptr_array_index (caps, i), 4,
+                          &cap->handle, &cap->channel_type,
+                          &cap->generic, cap->specific);
 
     DEBUG ("Capability information received for %d on %s with %x and %x",
         cap->handle, cap->channel_type, cap->generic, cap->specific);
   }
 
+  update_capabilities (tpcl, capabilities);
+  g_array_free (capabilities, TRUE);
+}
+
+static void
+get_contact_capabilities_for_members_cb(TpConnection *conn, GHashTable *caps,
+                                        const GError *error, gpointer user_data,
+                                        GObject *weak_object)
+{
+  EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
+  GArray *capabilities;
+
+  if (error)
+  {
+    WARNING ("Error whilst getting contact capabilities: %s",
+        error->message);
+    return;
+  }
+
+  if (!verify_is_connected (tpcl, NULL))
+    return;
+
+  capabilities = get_contact_capabilities(caps);
   update_capabilities (tpcl, capabilities);
   g_array_free (capabilities, TRUE);
 }
@@ -1800,45 +1934,43 @@ contact_info_attribute_add_params (EVCardAttribute *attr,
 }
 
 static gchar * 
-contact_info_to_vcard_str (const GPtrArray *handle_contactinfo)
+contact_info_to_vcard_str (const GPtrArray *contact_info)
 {
   EVCard *evc;
   gchar *vcard_str;
   guint i;
-  
-  if (handle_contactinfo == NULL ||
-      handle_contactinfo->len == 0)
+
+  if (contact_info == NULL || contact_info->len == 0)
     return NULL;
-  
+
   /* serialize a contact's vcard information to a single string */
   evc = e_vcard_new ();
-  for (i = 0; i < handle_contactinfo->len; i++)
+
+  for (i = 0; i < contact_info->len; i++)
   {
+    GValueArray *va = g_ptr_array_index (contact_info, i);
     EVCardAttribute *attr;
-    GValueArray *val;
-    const gchar *field;
+    const gchar *field_name;
     GStrv parameters;
-    GStrv values;
+    GStrv field_value;
     gchar **p;
 
-    val = g_ptr_array_index (handle_contactinfo, i);
-    
-    field = g_value_get_string (g_value_array_get_nth (val, 0));
-    parameters = g_value_get_boxed (g_value_array_get_nth (val, 1));
-    values = g_value_get_boxed (g_value_array_get_nth (val, 2));
-    
-    attr = e_vcard_attribute_new (NULL, field);
-    
+    tp_value_array_unpack (va, 3, &field_name, &parameters, &field_value);
+
+    attr = e_vcard_attribute_new (NULL, field_name);
+
     /* parameter list. Fields such as adr, tel, email may have parameters */
-    if (parameters[0])
+    if (*parameters)
       contact_info_attribute_add_params (attr, parameters);
-          
-    for (p = values; *p != NULL; p++)
+
+    for (p = field_value; *p; p++)
       e_vcard_attribute_add_value (attr, *p);
 
     e_vcard_add_attribute (evc, attr);
   }
   
+  /* FIXME - do not call e_vcard_to_string if vcard_str is not going to be
+     printed */
   vcard_str = e_vcard_to_string (evc, EVC_FORMAT_VCARD_30);
   DEBUG ("ContactInfo VCard string:\n%s", vcard_str);
 
@@ -1859,7 +1991,7 @@ contact_info_changed_cb (TpConnection *conn, guint handle,
   if (!verify_is_connected (tpcl, NULL))
     return;
 
-  contact = g_hash_table_lookup (priv->contacts_hash, 
+  contact = g_hash_table_lookup (priv->contacts_hash,
       GUINT_TO_POINTER (handle));
   
   if (contact) {
@@ -1914,15 +2046,15 @@ get_contact_info_for_members_cb (TpConnection *conn, GHashTable *out_contactinfo
     return;
 
   DEBUG ("get_contact_info_for_members_cb");
-  
+
   contacts = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
   handles = g_hash_table_get_keys (out_contactinfo);
   
   for (l = handles; l; l = g_list_next(l))
   {
     handle = (TpHandle) GPOINTER_TO_UINT (l->data);
-    
-    contact = g_hash_table_lookup (priv->contacts_hash, 
+
+    contact = g_hash_table_lookup (priv->contacts_hash,
         GUINT_TO_POINTER (handle));
     
     if (contact) {

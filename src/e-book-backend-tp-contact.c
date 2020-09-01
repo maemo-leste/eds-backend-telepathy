@@ -372,12 +372,11 @@ e_book_backend_tp_contact_to_econtact (EBookBackendTpContact *contact,
     g_object_unref (contactinfo);
   }
 
-  if (e_log_will_print (e_book_backend_tp_log_domain_id, G_LOG_LEVEL_DEBUG))
-  {
-    tmp = e_vcard_to_string (E_VCARD (econtact), EVC_FORMAT_VCARD_30);
-    DEBUG ("generated vcard: %s", tmp);
-    g_free (tmp);
-  }
+  /* FIXME - do not call e_vcard_to_string if tmp is not going to be
+     printed */
+  tmp = e_vcard_to_string (E_VCARD (econtact), EVC_FORMAT_VCARD_30);
+  DEBUG ("generated vcard: %s", tmp);
+  g_free (tmp);
 
   return econtact;
 }

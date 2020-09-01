@@ -22,4 +22,4 @@
 
 #include "e-book-backend-tp-log.h"
 
-gint e_book_backend_tp_log_domain_id = E_LOG_INVALID_DOMAIN;
+const gchar *e_book_backend_tp_log_domain_id = NULL;

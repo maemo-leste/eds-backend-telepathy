@@ -25,7 +25,7 @@
 #define _E_BOOK_BACKEND_TP_H__
 
 #include <dbus/dbus-glib.h>
-#include <libedata-book/e-book-backend-sync.h>
+#include <libedata-book/libedata-book.h>
 
 extern DBusGConnection *e_book_backend_tp_system_bus_connection;
 
@@ -39,12 +39,12 @@ extern DBusGConnection *e_book_backend_tp_system_bus_connection;
 typedef struct _EBookBackendTpPrivate EBookBackendTpPrivate;
 
 typedef struct {
-  EBookBackendSync parent;
+  EBookBackend parent;
   EBookBackendTpPrivate *priv;
 } EBookBackendTp;
 
 typedef struct {
-  EBookBackendSyncClass parent_class;
+  EBookBackendClass parent_class;
   void (*ready) (EBookBackendTp *backend);
   void (*members_ready) (EBookBackendTp *backend);
 } EBookBackendTpClass;

@@ -26,7 +26,7 @@
 #define _E_BOOK_BACKEND_TP_CONTACT
 
 #include <telepathy-glib/handle.h>
-#include <libedata-book/e-book-backend-sync.h>
+#include <libedata-book/libedata-book.h>
 #include "e-book-backend-tp-types.h"
 
 struct _EBookBackendTpContact {
