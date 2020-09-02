@@ -35,10 +35,9 @@
 #include "e-book-backend-tp-db.h"
 #include "e-book-backend-tp-log.h"
 
-G_DEFINE_TYPE (EBookBackendTpDb, e_book_backend_tp_db, G_TYPE_OBJECT)
 
 #define GET_PRIVATE(o) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((o), E_TYPE_BOOK_BACKEND_TP_DB, EBookBackendTpDbPrivate))
+  ((EBookBackendTpDbPrivate *) e_book_backend_tp_db_get_instance_private (E_BOOK_BACKEND_TP_DB (o)))
 
 #define e_book_backend_tp_db_begin(tpdb)    (e_book_backend_tp_db_real_begin ((tpdb), G_STRFUNC))
 #define e_book_backend_tp_db_commit(tpdb)   (e_book_backend_tp_db_real_commit ((tpdb), G_STRFUNC))
@@ -126,6 +125,10 @@ struct _EBookBackendTpDbPrivate {
   gchar        *filename;
 };
 
+G_DEFINE_TYPE_WITH_PRIVATE (EBookBackendTpDb,
+                            e_book_backend_tp_db,
+                            G_TYPE_OBJECT)
+
 /* Support for non-normalized variants was added later */
 #define VARIANTS_SCHEMA \
   "CREATE TABLE `variants` (" \
@@ -209,7 +212,6 @@ e_book_backend_tp_db_class_init (EBookBackendTpDbClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  g_type_class_add_private (klass, sizeof (EBookBackendTpDbPrivate));
   object_class->get_property = e_book_backend_tp_db_get_property;
   object_class->set_property = e_book_backend_tp_db_set_property;
   object_class->dispose = e_book_backend_tp_db_dispose;
