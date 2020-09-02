@@ -31,8 +31,6 @@
 
 DBusGConnection *e_book_backend_tp_system_bus_connection = NULL;
 
-static GType tp_factory_type;
-
 #define FACTORY_NAME "tp"
 
 typedef EBookBackendFactory EBookBackendTpFactory;
