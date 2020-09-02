@@ -1,3 +1,11 @@
+eds-backend-telepathy (0.4.62.2) unstable; urgency=low
+
+  * Initial Maemo Leste import/version
+  * The next version will switch back to triplet versions (0.4.63, not
+    0.4.62.3)
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Wed, 02 Sep 2020 12:52:54 +0200
+
 eds-backend-telepathy (0.4.62-1+0m5) unstable; urgency=low
 
   * This entry has been added by BIFH queue processor
