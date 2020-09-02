@@ -158,7 +158,7 @@ static const char complete_schema[] =
 
   VARIANTS_SCHEMA;
 
-static GStaticMutex account_cleanup_mutex = G_STATIC_MUTEX_INIT;
+static GMutex account_cleanup_mutex;
 
 GQuark
 e_book_backend_tp_db_error (void)
@@ -210,7 +210,6 @@ e_book_backend_tp_db_class_init (EBookBackendTpDbClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   g_type_class_add_private (klass, sizeof (EBookBackendTpDbPrivate));
-
   object_class->get_property = e_book_backend_tp_db_get_property;
   object_class->set_property = e_book_backend_tp_db_set_property;
   object_class->dispose = e_book_backend_tp_db_dispose;
@@ -391,7 +390,7 @@ am_prepared_cb(GObject *object, GAsyncResult *res, gpointer user_data)
 
   /* The mutex protects us from the (very unlikely tbh) creation of a new DB
    * between the call to g_stat and g_unlink. */
-  g_static_mutex_lock (&account_cleanup_mutex);
+  g_mutex_lock (&account_cleanup_mutex);
 
   g_hash_table_iter_init (&iter, account_dbs);
   while (g_hash_table_iter_next (&iter, &key, &value)) {
@@ -413,7 +412,7 @@ am_prepared_cb(GObject *object, GAsyncResult *res, gpointer user_data)
     }
   }
 
-  g_static_mutex_unlock (&account_cleanup_mutex);
+  g_mutex_unlock (&account_cleanup_mutex);
 
   g_hash_table_unref (account_dbs);
   g_object_unref(manager);
@@ -496,7 +495,7 @@ e_book_backend_tp_db_open_real (EBookBackendTpDb *tpdb,
     goto failure;
   }
 
-  g_static_mutex_lock (&account_cleanup_mutex);
+  g_mutex_lock (&account_cleanup_mutex);
   mutex_locked = TRUE;
 
   /* If there is a DB meant for restore (and created by the backup app)
@@ -604,7 +603,7 @@ e_book_backend_tp_db_open_real (EBookBackendTpDb *tpdb,
 #endif
 
   if (mutex_locked) {
-    g_static_mutex_unlock (&account_cleanup_mutex);
+    g_mutex_unlock (&account_cleanup_mutex);
     mutex_locked = FALSE;
   }
 
@@ -617,7 +616,7 @@ e_book_backend_tp_db_open_real (EBookBackendTpDb *tpdb,
 
 failure:
   if (mutex_locked) {
-    g_static_mutex_unlock (&account_cleanup_mutex);
+    g_mutex_unlock (&account_cleanup_mutex);
     mutex_locked = FALSE;
   }
 
