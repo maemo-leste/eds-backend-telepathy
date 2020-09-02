@@ -875,18 +875,23 @@ typedef struct
 } ChannelReadyClosure;
 
 static void
-tp_channel_ready_cb (TpChannel *channel, const GError *error, gpointer userdata)
+tp_channel_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
-  ChannelReadyClosure *closure = (ChannelReadyClosure *)userdata;
+  TpChannel *channel = (TpChannel *) object;
+  ChannelReadyClosure *closure = (ChannelReadyClosure *) user_data;
   EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (closure->tpcl);
   EBookBackendTpContactListId list_id = closure->list_id;
   GError *error_connect = NULL;
+  GError *error = NULL;
 
-  if (error)
+  if (!tp_proxy_prepare_finish (object, res, &error))
   {
     WARNING ("error when getting channel %s ready: %s",
              contact_list_id_to_string (list_id), error->message);
-  } else if (verify_is_connected (tpcl, NULL)) {
+    g_clear_error (error);
+  }
+  else if (verify_is_connected (tpcl, NULL))
+  {
     DEBUG ("channel %s ready",
         contact_list_id_to_string (list_id));
 
@@ -954,7 +959,7 @@ tp_request_channel_cb (TpConnection *conn, const gchar *object_path,
         closure = g_new0 (ChannelReadyClosure, 1);
         closure->tpcl = g_object_ref (tpcl);
         closure->list_id = list_id;
-        tp_channel_call_when_ready (backend_channel->channel,
+        tp_proxy_prepare_async (backend_channel->channel, NULL,
                                 tp_channel_ready_cb, closure);
       }
     }
