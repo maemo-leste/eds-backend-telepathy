@@ -356,11 +356,12 @@ static void
 remove_accounts_from_hash_table (GHashTable *account_dbs,
                                  const GList *accounts)
 {
-  GList *l;
+  const GList *l;
   gchar *db_name;
 
-  for (l = accounts; l; l = l->next) {
-    const gchar *path_suffix = tp_account_get_path_suffix(l->data);
+  for (l = accounts; l; l = l->next)
+  {
+    const gchar *path_suffix = tp_account_get_path_suffix (l->data);
 
     db_name = db_filename_for_account (path_suffix);
     g_hash_table_remove (account_dbs, db_name);
@@ -369,7 +370,7 @@ remove_accounts_from_hash_table (GHashTable *account_dbs,
 }
 
 static void
-am_prepared_cb(GObject *object, GAsyncResult *res, gpointer user_data)
+am_prepared_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
   TpAccountManager *manager = (TpAccountManager *)object;
   GHashTable *account_dbs = user_data;
