@@ -75,17 +75,17 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-static void e_book_backend_tp_cl_set_status (EBookBackendTpCl *tpcl, 
+static void e_book_backend_tp_cl_set_status (EBookBackendTpCl *tpcl,
     EBookBackendTpClStatus status);
 static void connection_status_changed_cb (TpAccount *account, guint old_status,
                                           guint new_status, guint reason,
                                           gchar *dbus_error_name,
                                           GHashTable *details,
                                           gpointer user_data);
-static void contact_info_changed_cb (TpConnection *conn, guint handle, 
+static void contact_info_changed_cb (TpConnection *conn, guint handle,
     const GPtrArray *handle_contactinfo, gpointer userdata, GObject *weak_object);
-static void get_contact_info_for_members_cb (TpConnection *conn, 
-    GHashTable *out_contactinfo, const GError *error, gpointer user_data, 
+static void get_contact_info_for_members_cb (TpConnection *conn,
+    GHashTable *out_contactinfo, const GError *error, gpointer user_data,
     GObject *weak_object);
 
 GQuark
@@ -164,7 +164,7 @@ e_book_backend_tp_cl_finalize (GObject *object)
   if (priv->account)
     g_signal_handlers_disconnect_by_func (priv->account,
         G_CALLBACK (connection_status_changed_cb), object);
-  
+
   if (G_OBJECT_CLASS (e_book_backend_tp_cl_parent_class)->finalize)
     G_OBJECT_CLASS (e_book_backend_tp_cl_parent_class)->finalize (object);
 }
@@ -188,7 +188,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, status_changed),
         NULL, NULL,
         g_cclosure_marshal_VOID__INT,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_INT);
 
   signals[CONTACTS_ADDED] = g_signal_new ("contacts-added",
@@ -197,7 +197,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, contacts_added),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[CONTACTS_REMOVED] = g_signal_new ("contacts-removed",
@@ -206,7 +206,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, contacts_removed),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[FLAGS_CHANGED] = g_signal_new ("flags-changed",
@@ -215,7 +215,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, flags_changed),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[ALIASES_CHANGED] = g_signal_new ("aliases-changed",
@@ -224,7 +224,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, aliases_changed),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[PRESENCES_CHANGED] = g_signal_new ("presences-changed",
@@ -233,7 +233,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, presences_changed),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[AVATAR_TOKENS_CHANGED] = g_signal_new ("avatar-tokens-changed",
@@ -251,7 +251,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
         G_STRUCT_OFFSET (EBookBackendTpClClass, avatar_data_changed),
         NULL, NULL,
         g_cclosure_marshal_VOID__POINTER,
-        G_TYPE_NONE, 
+        G_TYPE_NONE,
         1, G_TYPE_POINTER);
 
   signals[CAPABILITIES_CHANGED] = g_signal_new ("capabilities-changed",
@@ -262,7 +262,7 @@ e_book_backend_tp_cl_class_init (EBookBackendTpClClass *klass)
       g_cclosure_marshal_VOID__POINTER,
       G_TYPE_NONE,
       1, G_TYPE_POINTER);
-  
+
   signals[CONTACT_INFO_CHANGED] = g_signal_new ("contact-info-changed",
       G_OBJECT_CLASS_TYPE (klass),
       G_SIGNAL_RUN_FIRST,
@@ -323,7 +323,7 @@ contact_list_id_to_string (EBookBackendTpContactListId list_id)
       return "publish:local_pending";
     case CL_PUBLISH_REMOTE_PENDING:
       return "publish:remote_pending";
-      
+
     case CL_ALLOW:
       return "allow";
     case CL_ALLOW_LOCAL_PENDING:
@@ -553,7 +553,7 @@ static void get_capabilities_for_members_cb (TpConnection *conn,
 
 /* Inspect the features that are still drafts and are not yet supported by
  * tp_connection_get_contacts_by_handle. We have to do this after we retrieved
- * the TpContacts to avoid having the capabilities or the contact info 
+ * the TpContacts to avoid having the capabilities or the contact info
  * information before having the contact ID. */
 static void
 inspect_additional_features (EBookBackendTpCl *tpcl, GArray *contacts)
@@ -598,7 +598,7 @@ inspect_additional_features (EBookBackendTpCl *tpcl, GArray *contacts)
         (GObject *)tpcl);
   }
 
-  if (tp_proxy_has_interface_by_id (priv->conn, 
+  if (tp_proxy_has_interface_by_id (priv->conn,
         TP_IFACE_QUARK_CONNECTION_INTERFACE_CONTACT_INFO))
   {
     DEBUG ("getting contact info for all members");
@@ -688,8 +688,8 @@ handle_members_changed_idle_cb (gpointer userdata)
     ~CONTACT_FLAG_FROM_ID(CONTACT_LIST_ID_GET_REMOTE_FROM_CURRENT (list_id));
 
 static void
-tp_channel_members_changed_cb (TpChannel *channel, const gchar *message, 
-    const GArray *added, const GArray *removed, 
+tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
+    const GArray *added, const GArray *removed,
     const GArray *local_pending, const GArray *remote_pending,
     guint actor, guint reason, gpointer userdata, GObject *weak_object)
 {
@@ -769,7 +769,7 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
 
       if (contact->flags == 0)
       {
-        DEBUG ("contact with name %s has no flags. removing.", 
+        DEBUG ("contact with name %s has no flags. removing.",
             contact->name);
         e_book_backend_tp_contact_ref (contact);
         g_array_append_val (closure->contacts_to_remove, contact);
@@ -788,7 +788,7 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
     {
       /* clear any old flags */
       CLEAR_LIST_FLAGS (contact, list_id);
-      contact->flags |= 
+      contact->flags |=
         CONTACT_FLAG_FROM_ID(CONTACT_LIST_ID_GET_LOCAL_FROM_CURRENT (list_id));
 
       DEBUG ("existing contact %s has in local-pending for %s",
@@ -804,7 +804,7 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
       g_array_append_val (closure->handles_to_inspect, handle);
     }
 
-    contact->flags |= 
+    contact->flags |=
       CONTACT_FLAG_FROM_ID(CONTACT_LIST_ID_GET_LOCAL_FROM_CURRENT (list_id));
   }
 
@@ -817,7 +817,7 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
     {
       /* clear any old flags */
       CLEAR_LIST_FLAGS (contact, list_id);
-      contact->flags |= 
+      contact->flags |=
         CONTACT_FLAG_FROM_ID(CONTACT_LIST_ID_GET_REMOTE_FROM_CURRENT (list_id));
 
       DEBUG ("existing contact %s has in remote-pending for %s",
@@ -833,7 +833,7 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
       g_array_append_val (closure->handles_to_inspect, handle);
     }
 
-    contact->flags |= 
+    contact->flags |=
       CONTACT_FLAG_FROM_ID(CONTACT_LIST_ID_GET_REMOTE_FROM_CURRENT (list_id));
   }
 
@@ -841,8 +841,8 @@ tp_channel_members_changed_cb (TpChannel *channel, const gchar *message,
   for (i = 0; i < closure->contacts_to_add->len; i++)
   {
     contact = g_array_index (closure->contacts_to_add, EBookBackendTpContact *, i);
-    g_hash_table_insert (priv->contacts_hash, 
-        GINT_TO_POINTER (contact->handle), 
+    g_hash_table_insert (priv->contacts_hash,
+        GINT_TO_POINTER (contact->handle),
         e_book_backend_tp_contact_ref (contact));
   }
 
@@ -885,9 +885,9 @@ tp_channel_ready_cb (TpChannel *channel, const GError *error, gpointer userdata)
   if (error)
   {
     WARNING ("error when getting channel %s ready: %s",
-        contact_list_id_to_string (list_id), error->message);
+             contact_list_id_to_string (list_id), error->message);
   } else if (verify_is_connected (tpcl, NULL)) {
-    DEBUG ("channel %s ready", 
+    DEBUG ("channel %s ready",
         contact_list_id_to_string (list_id));
 
     g_assert (closure);
@@ -955,14 +955,14 @@ tp_request_channel_cb (TpConnection *conn, const gchar *object_path,
         closure->tpcl = g_object_ref (tpcl);
         closure->list_id = list_id;
         tp_channel_call_when_ready (backend_channel->channel,
-            tp_channel_ready_cb, closure);
+                                tp_channel_ready_cb, closure);
       }
     }
   }
 }
 
 static void
-request_handles_for_contact_list_cb (TpConnection *conn, const GArray *handles, 
+request_handles_for_contact_list_cb (TpConnection *conn, const GArray *handles,
     const GError *error, gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = (EBookBackendTpCl *)weak_object;
@@ -1004,13 +1004,13 @@ request_handles_for_contact_list_cb (TpConnection *conn, const GArray *handles,
 }
 
 
-static void capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps, 
+static void capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps,
     gpointer userdata, GObject *weak_object);
 static void contact_capabilities_changed_cb(TpConnection *conn,
     GHashTable *caps, gpointer user_data, GObject *weak_object);
 
 static void
-aliases_changed_cb (TpConnection *conn, const GPtrArray *new_aliases, 
+aliases_changed_cb (TpConnection *conn, const GPtrArray *new_aliases,
     gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = (EBookBackendTpCl *)weak_object;
@@ -1130,7 +1130,7 @@ avatar_updated_cb (TpConnection *conn, guint contact_handle,
 }
 
 static void
-presences_changed_cb (TpConnection *conn, GHashTable *presences, 
+presences_changed_cb (TpConnection *conn, GHashTable *presences,
     gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = (EBookBackendTpCl *)weak_object;
@@ -1385,7 +1385,7 @@ tp_connection_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
           NULL,
           (GObject *)tpcl,
           &error_connect);
-      
+
       if (error_connect)
       {
         WARNING ("Failed to connect to ContactInfoChanged signal - %s",
@@ -1454,7 +1454,7 @@ account_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
 {
   TpAccount *account = (TpAccount *)object;
   EBookBackendTpCl *tpcl = user_data;
-  EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl); 
+  EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
   TpConnectionStatus connection_status;
   GError *error = NULL;
 
@@ -1495,7 +1495,7 @@ e_book_backend_tp_cl_load (EBookBackendTpCl *tpcl, TpAccount *account,
   priv->account = g_object_ref (account);
   priv->account_name = tp_account_get_path_suffix(account);
 
-  MESSAGE ("starting load process for %s", 
+  MESSAGE ("starting load process for %s",
       priv->account_name);
 
   /* We have to ref tpcl to be sure we are not destroyed before the callback is
@@ -1517,7 +1517,7 @@ e_book_backend_tp_cl_go_offline (EBookBackendTpCl *tpcl)
   contacts = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
 
   g_hash_table_iter_init (&iter, priv->contacts_hash);
-  while (g_hash_table_iter_next (&iter, NULL, &value)) 
+  while (g_hash_table_iter_next (&iter, NULL, &value))
   {
     EBookBackendTpContact *contact = value;
 
@@ -1594,6 +1594,11 @@ typedef struct {
   guint specific;
 } ContactCapability;
 
+typedef struct {
+  guint handle;
+  guint32 capabilities;
+} ContactContactCapability;
+
 static gint
 contact_handle_sort_func (EBookBackendTpContact *a, EBookBackendTpContact *b)
 {
@@ -1618,7 +1623,7 @@ update_capabilities (EBookBackendTpCl *tpcl, GArray *capabilities)
   {
     cap = &g_array_index (capabilities, ContactCapability, i);
 
-    contact = g_hash_table_lookup (priv->contacts_hash, 
+    contact = g_hash_table_lookup (priv->contacts_hash,
         GUINT_TO_POINTER (cap->handle));
 
     if (!contact)
@@ -1664,7 +1669,7 @@ update_capabilities (EBookBackendTpCl *tpcl, GArray *capabilities)
   /* Remove duplicates. First we sort based on the handle */
   g_array_sort (contacts, (GCompareFunc)contact_handle_sort_func);
 
-  /* 
+  /*
    * Then we iterate backwards removing those that are duplicates. We go
    * backwards so that we can use g_array_remove_index_fast which just puts
    * the last element in the place of the one we removed.
@@ -1689,7 +1694,71 @@ update_capabilities (EBookBackendTpCl *tpcl, GArray *capabilities)
 }
 
 static void
-capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps, 
+update_contact_capabilities (EBookBackendTpCl *tpcl, GArray *capabilities)
+{
+  EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
+  EBookBackendTpContact *contact;
+  GArray *contacts = NULL;
+  guint i = 0;
+  gint rev_index;
+  ContactContactCapability *cap;
+  TpHandle last_handle;
+  TpHandle cur_handle;
+
+  contacts = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
+
+  for (i = 0; i < capabilities->len; i++)
+  {
+    cap = &g_array_index (capabilities, ContactContactCapability, i);
+
+    contact = g_hash_table_lookup (priv->contacts_hash,
+                                   GUINT_TO_POINTER (cap->handle));
+
+    if (!contact)
+    {
+      DEBUG ("Told about capability on uknown contact: %d", cap->handle);
+      continue;
+    }
+
+    g_array_append_val (contacts, contact);
+    contact->capabilities = cap->capabilities;
+  }
+
+  if (contacts->len == 0)
+  {
+    g_array_free (contacts, TRUE);
+    return;
+  }
+
+  /* Remove duplicates. First we sort based on the handle */
+  g_array_sort (contacts, (GCompareFunc)contact_handle_sort_func);
+
+  /*
+   * Then we iterate backwards removing those that are duplicates. We go
+   * backwards so that we can use g_array_remove_index_fast which just puts
+   * the last element in the place of the one we removed.
+   */
+  contact = g_array_index (contacts, EBookBackendTpContact *, contacts->len - 1);
+  last_handle = contact->handle;
+
+  for (rev_index = contacts->len - 2; rev_index >= 0; rev_index--)
+  {
+    contact = g_array_index (contacts, EBookBackendTpContact *, rev_index);
+    cur_handle = contact->handle;
+    if (cur_handle == last_handle)
+    {
+      g_array_remove_index_fast (contacts, rev_index);
+    } else {
+      last_handle = cur_handle;
+    }
+  }
+
+  g_signal_emit (tpcl, signals[CAPABILITIES_CHANGED], 0, contacts);
+  g_array_free (contacts, TRUE);
+}
+
+static void
+capabilities_changed_cb (TpConnection *conn, const GPtrArray *caps,
     gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
@@ -1726,63 +1795,80 @@ get_contact_capabilities(GHashTable *caps)
 {
   GHashTableIter iter;
   gpointer k;
-  GPtrArray *v;
+  GPtrArray *classes;
   guint caps_len;
-  ContactCapability *cap;
+  ContactContactCapability *cap;
   GArray *capabilities;
   int idx = 0;
 
   caps_len = g_hash_table_size(caps);
-  capabilities = g_array_sized_new (TRUE, TRUE,
-                                    sizeof (ContactCapability), caps_len);
+  capabilities = g_array_sized_new (
+        TRUE, TRUE, sizeof (ContactContactCapability), caps_len);
   g_array_set_size (capabilities, caps_len);
   g_hash_table_iter_init (&iter, caps);
 
-  while (g_hash_table_iter_next (&iter, &k, (gpointer *)&v))
+  while (g_hash_table_iter_next (&iter, &k, (gpointer *)&classes))
   {
     int i;
 
-    cap = &g_array_index (capabilities, ContactCapability, idx++);
+    cap = &g_array_index (capabilities, ContactContactCapability, idx++);
     cap->handle = GPOINTER_TO_UINT(k);
 
-    for (i = 0; i < v->len; i++)
+    DEBUG ("Capability information received for %d", cap->handle);
+
+    for (i = 0; i < classes->len; i++)
     {
-      GValueArray *values;
-      int j;
+      GValueArray *arr;
+      GHashTable *fixed;
+      const gchar *const *allowed;
+      const gchar *channel_type;
 
-      values = g_ptr_array_index (v, i);
+      arr = g_ptr_array_index (classes, i);
+      tp_value_array_unpack (arr, 2, &fixed, &allowed);
 
-      for (j = 0; j < values->n_values - 1; j++)
+      DEBUG ("ContactCapabilities:");
+      tp_asv_dump (fixed);
+
+      if (g_hash_table_size (fixed) != 2)
+        continue;
+
+      channel_type = tp_asv_get_string (fixed, TP_PROP_CHANNEL_CHANNEL_TYPE);
+
+      if (!g_strcmp0(channel_type, TP_IFACE_CHANNEL_TYPE_STREAMED_MEDIA))
       {
-        GHashTable *asv = g_value_get_boxed (g_value_array_get_nth (values, j));
-
-        cap->channel_type =
-            tp_asv_get_string(asv, TP_PROP_CHANNEL_CHANNEL_TYPE);
-
-        if (!g_strcmp0(cap->channel_type, TP_IFACE_CHANNEL_TYPE_STREAMED_MEDIA))
+        if (tp_asv_get_boolean(
+              fixed, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_AUDIO, NULL))
         {
-          if (tp_asv_get_boolean(
-                asv, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_AUDIO, NULL))
-          {
-            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_AUDIO;
-          }
-          if (tp_asv_get_boolean(
-                asv, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_VIDEO, NULL))
-          {
-            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_VIDEO;
-          }
-          if (tp_asv_get_boolean(
-                asv,
-                TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_IMMUTABLE_STREAMS, NULL))
-          {
-            cap->specific |= TP_CHANNEL_MEDIA_CAPABILITY_IMMUTABLE_STREAMS;
-          }
+          cap->capabilities |= CAP_VOICE;
+        }
+        if (tp_asv_get_boolean(
+              fixed, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_VIDEO, NULL))
+        {
+          cap->capabilities |= CAP_VIDEO;
+        }
+        if (tp_asv_get_boolean(
+              fixed,
+              TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_IMMUTABLE_STREAMS, NULL))
+        {
+          cap->capabilities |= CAP_IMMUTABLE_STREAMS;
         }
       }
+      else if (!g_strcmp0 (channel_type, TP_IFACE_CHANNEL_TYPE_CALL))
+      {
+        if (tp_asv_get_boolean(
+              fixed, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_AUDIO, NULL))
+        {
+          cap->capabilities |= CAP_VOICE;
+        }
+        if (tp_asv_get_boolean(
+              fixed, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_VIDEO, NULL))
+        {
+          cap->capabilities |= CAP_VIDEO;
+        }
+      }
+      else if (!g_strcmp0 (channel_type, TP_IFACE_CHANNEL_TYPE_TEXT))
+        cap->capabilities |= CAP_TEXT;
     }
-
-    DEBUG ("Capability information received for %d on %s with %x and %x",
-        cap->handle, cap->channel_type, cap->generic, cap->specific);
   }
 
   return capabilities;
@@ -1799,11 +1885,11 @@ contact_capabilities_changed_cb(TpConnection *conn, GHashTable *caps,
     return;
 
   capabilities = get_contact_capabilities(caps);
-  update_capabilities (tpcl, capabilities);
+  update_contact_capabilities (tpcl, capabilities);
   g_array_free (capabilities, TRUE);
 }
 
-static void 
+static void
 get_capabilities_for_members_cb (TpConnection *conn, const GPtrArray *caps,
     const GError *error, gpointer userdata, GObject *weak_object)
 {
@@ -1814,7 +1900,7 @@ get_capabilities_for_members_cb (TpConnection *conn, const GPtrArray *caps,
 
   if (error)
   {
-    WARNING ("Error whilst getting capabilities: %s", 
+    WARNING ("Error whilst getting capabilities: %s",
         error->message);
     return;
   }
@@ -1859,7 +1945,7 @@ get_contact_capabilities_for_members_cb(TpConnection *conn, GHashTable *caps,
     return;
 
   capabilities = get_contact_capabilities(caps);
-  update_capabilities (tpcl, capabilities);
+  update_contact_capabilities (tpcl, capabilities);
   g_array_free (capabilities, TRUE);
 }
 
@@ -1867,14 +1953,14 @@ get_contact_capabilities_for_members_cb(TpConnection *conn, GHashTable *caps,
 /* Functions for Telepathy ContactInfo interface */
 /*************************************************/
 
-static void 
+static void
 attribute_add_param_foreach_cb (gpointer key,
                                 gpointer value,
                                 gpointer data)
 {
   EVCardAttribute *attr = (EVCardAttribute *)data;
   EVCardAttributeParam *param = (EVCardAttributeParam *)value;
-  
+
   e_vcard_attribute_add_param (attr, param);
 }
 
@@ -1884,9 +1970,9 @@ contact_info_attribute_add_params (EVCardAttribute *attr,
 {
   gchar **p;
   GHashTable *param_table;
-    
+
   param_table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-  
+
   /* For GStrv parameters[3] = {"type=home", "type=voice", NULL};
    * This function returns parameter list like TEL;TYPE=HOME,VOICE:1111
    * instead of TEL;TYPE=HOME;TYPE=VOICE:1111 */
@@ -1895,16 +1981,16 @@ contact_info_attribute_add_params (EVCardAttribute *attr,
     gchar **list;
     gchar *name = NULL;
     gchar *value = NULL;
-    
+
     list = g_strsplit (*p, "=", 2);
     if (list[1]) {
       /* e.g. "type=home" */
-      
+
       /* UI only loves uppercase parameters, e.g. TEL;TYPE=HOME:1111 */
       name = g_ascii_strup (list[0], -1);
       value = g_ascii_strup (list[1], -1);
-      
-      param = g_hash_table_lookup (param_table, name);      
+
+      param = g_hash_table_lookup (param_table, name);
       if (param) {
         e_vcard_attribute_param_add_value (param, value);
         g_free (name);
@@ -1924,16 +2010,16 @@ contact_info_attribute_add_params (EVCardAttribute *attr,
       e_vcard_attribute_add_param (attr, param);
       g_free (name);
     }
-    
+
     g_strfreev (list);
   }
-  
+
   g_hash_table_foreach (param_table, attribute_add_param_foreach_cb, attr);
-  
+
   g_hash_table_unref (param_table);
 }
 
-static gchar * 
+static gchar *
 contact_info_to_vcard_str (const GPtrArray *contact_info)
 {
   EVCard *evc;
@@ -1968,7 +2054,7 @@ contact_info_to_vcard_str (const GPtrArray *contact_info)
 
     e_vcard_add_attribute (evc, attr);
   }
-  
+
   /* FIXME - do not call e_vcard_to_string if vcard_str is not going to be
      printed */
   vcard_str = e_vcard_to_string (evc, EVC_FORMAT_VCARD_30);
@@ -1978,37 +2064,37 @@ contact_info_to_vcard_str (const GPtrArray *contact_info)
   return vcard_str;
 }
 
-static void 
-contact_info_changed_cb (TpConnection *conn, guint handle, 
+static void
+contact_info_changed_cb (TpConnection *conn, guint handle,
     const GPtrArray *handle_contactinfo, gpointer userdata, GObject *weak_object)
 {
   EBookBackendTpCl *tpcl = E_BOOK_BACKEND_TP_CL (weak_object);
   EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
   EBookBackendTpContact *contact = NULL;
-    
+
   DEBUG ("contact_info_changed_cb");
-  
+
   if (!verify_is_connected (tpcl, NULL))
     return;
 
   contact = g_hash_table_lookup (priv->contacts_hash,
       GUINT_TO_POINTER (handle));
-  
+
   if (contact) {
     gchar *vcard_str;
-    
+
     vcard_str = contact_info_to_vcard_str (handle_contactinfo);
-    
+
     g_free (contact->contact_info);
     contact->contact_info = vcard_str;
-    
+
     if (vcard_str) {
       GArray *contacts;
-      
+
       contacts = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
       g_array_append_val (contacts, contact);
       g_signal_emit (tpcl, signals[CONTACT_INFO_CHANGED], 0, contacts);
-      
+
       g_array_free (contacts, TRUE);
     }
   } else {
@@ -2018,10 +2104,10 @@ contact_info_changed_cb (TpConnection *conn, guint handle,
 
 /**
  * @out_contactinfo: a dictionary whose keys are contact handles
- * and whose values are contact information 
- * 
+ * and whose values are contact information
+ *
  */
-static void 
+static void
 get_contact_info_for_members_cb (TpConnection *conn, GHashTable *out_contactinfo,
     const GError *error, gpointer user_data, GObject *weak_object)
 {
@@ -2031,17 +2117,17 @@ get_contact_info_for_members_cb (TpConnection *conn, GHashTable *out_contactinfo
   TpHandle handle;
   GPtrArray *handle_contactinfo;
   gchar *vcard_str = NULL;
-  
+
   GArray *contacts = NULL;
   EBookBackendTpContact *contact = NULL;
-  
+
   if (error)
   {
-    WARNING ("Error whilst getting contact info: %s", 
+    WARNING ("Error whilst getting contact info: %s",
         error->message);
     return;
   }
-  
+
   if (!verify_is_connected (tpcl, NULL))
     return;
 
@@ -2049,32 +2135,32 @@ get_contact_info_for_members_cb (TpConnection *conn, GHashTable *out_contactinfo
 
   contacts = g_array_new (TRUE, TRUE, sizeof (EBookBackendTpContact *));
   handles = g_hash_table_get_keys (out_contactinfo);
-  
+
   for (l = handles; l; l = g_list_next(l))
   {
     handle = (TpHandle) GPOINTER_TO_UINT (l->data);
 
     contact = g_hash_table_lookup (priv->contacts_hash,
         GUINT_TO_POINTER (handle));
-    
+
     if (contact) {
       handle_contactinfo = (GPtrArray *)g_hash_table_lookup (out_contactinfo,
               GUINT_TO_POINTER (handle));
       vcard_str = contact_info_to_vcard_str (handle_contactinfo);
-      
+
       g_free (contact->contact_info);
       contact->contact_info = vcard_str;
-      
+
       if (vcard_str)
         g_array_append_val (contacts, contact);
     } else {
       WARNING ("mismatched contact and contact info");
     }
   }
-  
+
   if (contacts->len > 0)
     g_signal_emit (tpcl, signals[CONTACT_INFO_CHANGED], 0, contacts);
-  
+
   g_array_free (contacts, TRUE);
   g_list_free (handles);
 }
@@ -2194,7 +2280,7 @@ finish_get_channel_members (EBookBackendTpCl *tpcl, GetMembersClosure *closure)
   g_array_free (handles, TRUE);
 }
 
-static void get_next_channel_members (EBookBackendTpCl *tpcl, 
+static void get_next_channel_members (EBookBackendTpCl *tpcl,
     GetMembersClosure *closure);
 
 static void
@@ -2211,12 +2297,12 @@ channel_get_all_members_cb (TpChannel *channel, const GArray *current,
   EBookBackendTpContactListId list_id = closure->list_id;
   EBookBackendTpContactFlag flag;
 
-  DEBUG ("channel_get_all_members_cb called for %s", 
+  DEBUG ("channel_get_all_members_cb called for %s",
       contact_list_id_to_string (closure->list_id));
 
   if (error_in)
   {
-    WARNING ("error when getting all members on %s: %s", 
+    WARNING ("error when getting all members on %s: %s",
         contact_list_id_to_string (closure->list_id), error_in->message);
     closure->cb (tpcl, NULL, error_in, closure->userdata);
     g_free (closure);
@@ -2374,7 +2460,7 @@ e_book_backend_tp_cl_run_update_flags (EBookBackendTpCl *tpcl,
   /* Check we have a handle on the contact we've been given */
   if (updated_contact->handle > 0)
   {
-    contact = g_hash_table_lookup (priv->contacts_hash, 
+    contact = g_hash_table_lookup (priv->contacts_hash,
         GINT_TO_POINTER (updated_contact->handle));
 
     if (contact)
@@ -2388,7 +2474,7 @@ e_book_backend_tp_cl_run_update_flags (EBookBackendTpCl *tpcl,
 
       for (i = 0; i < CL_LAST_LIST; i+=3)
       {
-        if (updated_contact->pending_flags & CONTACT_FLAG_FROM_ID (i) && 
+        if (updated_contact->pending_flags & CONTACT_FLAG_FROM_ID (i) &&
             !(contact->flags & CONTACT_FLAG_FROM_ID (i)))
         {
           DEBUG ("contact is to be added to %s",
@@ -2475,7 +2561,7 @@ out:
   return success;
 }
 
-gboolean 
+gboolean
 e_book_backend_tp_cl_run_add_contact (EBookBackendTpCl *tpcl,
     EBookBackendTpContact *new_contact, GError **error_out)
 {
@@ -2582,7 +2668,7 @@ e_book_backend_tp_cl_run_add_contact (EBookBackendTpCl *tpcl,
       }
     }
   }
- 
+
   success = TRUE;
 
 out:
@@ -2596,7 +2682,7 @@ out:
 }
 
 gboolean
-e_book_backend_tp_cl_run_remove_contact (EBookBackendTpCl *tpcl, 
+e_book_backend_tp_cl_run_remove_contact (EBookBackendTpCl *tpcl,
     EBookBackendTpContact *contact_in, GError **error_out)
 {
   EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
@@ -2610,12 +2696,12 @@ e_book_backend_tp_cl_run_remove_contact (EBookBackendTpCl *tpcl,
   if (!verify_is_connected (tpcl, error_out))
     return FALSE;
 
-  contact = g_hash_table_lookup (priv->contacts_hash, 
+  contact = g_hash_table_lookup (priv->contacts_hash,
       GUINT_TO_POINTER (contact_in->handle));
 
   if (!contact)
   {
-    g_set_error (error_out, 
+    g_set_error (error_out,
         E_BOOK_BACKEND_TP_CL_ERROR,
         E_BOOK_BACKEND_TP_CL_ERROR_FAILED,
         "Requesting deletion of unknown contact");
@@ -2703,7 +2789,7 @@ e_book_backend_tp_cl_run_remove_contact (EBookBackendTpCl *tpcl,
 }
 
 gboolean
-e_book_backend_tp_cl_run_unblock_contact (EBookBackendTpCl *tpcl, 
+e_book_backend_tp_cl_run_unblock_contact (EBookBackendTpCl *tpcl,
     EBookBackendTpContact *contact_in, GError **error_out)
 {
   EBookBackendTpClPrivate *priv = GET_PRIVATE (tpcl);
@@ -2716,12 +2802,12 @@ e_book_backend_tp_cl_run_unblock_contact (EBookBackendTpCl *tpcl,
   if (!verify_is_connected (tpcl, error_out))
     return FALSE;
 
-  contact = g_hash_table_lookup (priv->contacts_hash, 
+  contact = g_hash_table_lookup (priv->contacts_hash,
       GUINT_TO_POINTER (contact_in->handle));
 
   if (!contact)
   {
-    g_set_error (error_out, 
+    g_set_error (error_out,
         E_BOOK_BACKEND_TP_CL_ERROR,
         E_BOOK_BACKEND_TP_CL_ERROR_FAILED,
         "Requesting unblocking of unknown contact");
@@ -2782,7 +2868,7 @@ e_book_backend_tp_cl_run_unblock_contact (EBookBackendTpCl *tpcl,
   return success;
 }
 
-gboolean 
+gboolean
 e_book_backend_tp_cl_request_avatar_data (EBookBackendTpCl *tpcl,
     GArray *contacts, GError **error_out)
 {
