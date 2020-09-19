@@ -1,3 +1,9 @@
+eds-backend-telepathy (0.4.63) unstable; urgency=low
+
+  * First working version
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Sat, 19 Sep 2020 10:01:21 +0200
+
 eds-backend-telepathy (0.4.62.2) unstable; urgency=low
 
   * Initial Maemo Leste import/version
