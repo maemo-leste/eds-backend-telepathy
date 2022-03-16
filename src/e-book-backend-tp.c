@@ -1926,8 +1926,7 @@ cm_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
   protocol =
       tp_connection_manager_get_protocol_object (cm, priv->protocol_name);
 
-  priv->vcard_field =
-      g_ascii_strup (tp_protocol_get_vcard_field (protocol), -1);
+  priv->vcard_field = g_strdup (tp_protocol_get_vcard_field (protocol));
   g_object_unref(cm);
 
   tp_proxy_prepare_async (priv->account, NULL, account_ready_cb, backend);
