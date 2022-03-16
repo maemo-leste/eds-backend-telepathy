@@ -1,3 +1,9 @@
+eds-backend-telepathy (0.4.64) unstable; urgency=low
+
+  * do not g_ascii_strup  protocol vcard_field
+
+ -- Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>  Wed, 16 Mar 2022 19:39:23 +0200
+
 eds-backend-telepathy (0.4.63) unstable; urgency=low
 
   * First working version
