@@ -43,10 +43,10 @@
 #include "e-book-backend-tp-db.h"
 #include "e-book-backend-tp-log.h"
 
-#define EDB_ERROR(_code) \
-  (e_data_book_create_error (E_DATA_BOOK_STATUS_ ## _code, NULL))
-#define EDB_ERROR_EX(_code, _msg) \
-  (e_data_book_create_error (E_DATA_BOOK_STATUS_ ## _code, _msg))
+#define EC_ERROR(_code) \
+  (e_client_error_create(E_CLIENT_ERROR_ ## _code, NULL))
+#define EC_ERROR_EX(_code, _msg) \
+  (e_client_error_create(E_CLIENT_ERROR_ ## _code, _msg))
 
 #define GET_PRIVATE(o) \
   ((EBookBackendTpPrivate *) e_book_backend_tp_get_instance_private (E_BOOK_BACKEND_TP (o)))
@@ -1972,7 +1972,7 @@ get_inactivity_status_cb (DBusGProxy *proxy, DBusGProxyCall *call, void *userdat
 }
 
 static gboolean
-e_book_backend_tp_open_sync (EBookBackend *backend,
+e_book_backend_tp_open_sync (EBookBackendSync *backend,
                              GCancellable *cancellable,
                              GError **error)
 {
@@ -1995,7 +1995,7 @@ e_book_backend_tp_open_sync (EBookBackend *backend,
 
   if (!e_source_has_extension (source, E_SOURCE_EXTENSION_RESOURCE))
   {
-    *error = EDB_ERROR_EX (INVALID_ARG,
+    *error = EC_ERROR_EX (INVALID_ARG,
                            "no source extension E_SOURCE_EXTENSION_RESOURCE");
   }
   else
@@ -2060,7 +2060,7 @@ e_book_backend_tp_get_backend_property (EBookBackend *backend,
 
   /* Chain up to parent's get_backend_property() method. */
   return E_BOOK_BACKEND_CLASS (e_book_backend_tp_parent_class)->
-          get_backend_property (backend, prop_name);
+          impl_get_backend_property (backend, prop_name);
 
 }
 /* Stream the contacts over to the client.in the view. */
@@ -2278,7 +2278,7 @@ start_book_view_idle_cb (gpointer userdata)
         "be started");
 
     e_data_book_view_notify_complete (closure->book_view,
-                                      EDB_ERROR (OTHER_ERROR));
+                                      EC_ERROR (OTHER_ERROR));
 
     goto done;
   }
@@ -2547,13 +2547,15 @@ modify_contact_idle_cb (gpointer userdata)
   EBookBackendTpClStatus tpcl_status;
   GError *error = NULL;
   EContact *updated_econtact;
-  EDataBookStatus status;
+  EBookClientError status;
+  gboolean status_ok = TRUE;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contact cannot "
         "be modified");
-    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+    status = E_CLIENT_ERROR_INVALID_ARG;
+    status_ok = FALSE;
     goto done;
   }
 
@@ -2561,19 +2563,19 @@ modify_contact_idle_cb (gpointer userdata)
 
   if (!priv->tpdb)
   {
-    status = E_DATA_BOOK_STATUS_BOOK_REMOVED;
+    status = E_BOOK_CLIENT_ERROR_NO_SUCH_BOOK;
+    status_ok = FALSE;
     goto done;
   }
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = E_DATA_BOOK_STATUS_NO_SPACE;
+    status = E_BOOK_CLIENT_ERROR_NO_SPACE;
+    status_ok = FALSE;
     goto done;
   }
 
   flush_db_updates (backend);
-
-  status = E_DATA_BOOK_STATUS_SUCCESS;
 
   uid = e_contact_get_const (closure->contact, E_CONTACT_UID);
 
@@ -2641,15 +2643,17 @@ modify_contact_idle_cb (gpointer userdata)
     else
     {
       WARNING ("Unknown uid (%s) on submitted vcard", uid);
-      status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+      status = E_CLIENT_ERROR_INVALID_ARG;
+      status_ok = FALSE;
     }
   } else {
     WARNING ("No uid found on submitted vcard");
-    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+    status = E_CLIENT_ERROR_INVALID_ARG;
+    status_ok = FALSE;
   }
 
 done:
-  if (status == E_DATA_BOOK_STATUS_SUCCESS)
+  if (status_ok)
   {
     GSList modified_contacts;
 
@@ -2665,7 +2669,7 @@ done:
   {
     g_object_unref (closure->contact);
     e_data_book_respond_modify_contacts (closure->book, closure->opid,
-                                e_data_book_create_error(status, NULL), NULL);
+                                 e_client_error_create(status, NULL), NULL);
   }
 
   g_object_unref (closure->contact);
@@ -2681,21 +2685,24 @@ done:
 static void
 e_book_backend_tp_modify_contacts (EBookBackend *backend, EDataBook *book,
                                    guint32 opid, GCancellable *cancellable,
-                                   const GSList *vcards)
+                                   const gchar * const *vcards, guint32 opflags)
 {
+  // XXX: opflags?
   ModifyContactClosure *closure;
-  gchar *vcard = vcards->data;
+  guint vcard_len = g_strv_length((gchar**) vcards);
 
-  if (vcards->next != NULL)
+  if (vcard_len > 1)
   {
     e_data_book_respond_modify_contacts (
           book, opid,
-          EDB_ERROR_EX (NOT_SUPPORTED,
+          EC_ERROR_EX (NOT_SUPPORTED,
                         "The backend does not support bulk modifications"),
           NULL);
 
           return;
   }
+
+  const gchar *vcard = vcards[0];
 
   g_critical ("Modifying contacts is not supported for IM contacts and "
       "can lead to race conditions. Just add the same contacts again to "
@@ -2870,14 +2877,16 @@ create_contacts_idle_cb (gpointer userdata)
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
   GSList *econtact_in;
   GSList *econtacts = NULL;
-  EDataBookStatus status = E_DATA_BOOK_STATUS_SUCCESS;
+  EBookClientError status;
+  gboolean status_ok = TRUE;
   GError *error = NULL;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contacts cannot "
         "be created");
-    status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+    status = E_CLIENT_ERROR_INVALID_ARG;
+    status_ok = FALSE;
     goto done;
   }
 
@@ -2885,7 +2894,8 @@ create_contacts_idle_cb (gpointer userdata)
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = E_DATA_BOOK_STATUS_NO_SPACE;
+    status = E_BOOK_CLIENT_ERROR_NO_SPACE;
+    status_ok = FALSE;
     goto done;
   }
 
@@ -2909,7 +2919,7 @@ create_contacts_idle_cb (gpointer userdata)
     {
       g_slist_free_full (econtacts, g_object_unref);
       econtacts = NULL;
-      status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+      status = E_CLIENT_ERROR_INVALID_ARG;
       g_clear_error (&error);
       break;
     }
@@ -2918,9 +2928,13 @@ create_contacts_idle_cb (gpointer userdata)
   }
 
 done:
-  e_data_book_respond_create_contacts (closure->book, closure->opid,
-                                       e_data_book_create_error(status, NULL),
-                                       econtacts);
+  if (status_ok)
+    e_data_book_respond_create_contacts (closure->book, closure->opid,
+                                         NULL, econtacts);
+  else
+    e_data_book_respond_create_contacts (closure->book, closure->opid,
+                                         e_client_error_create(status, NULL),
+                                         econtacts);
 
   g_object_unref (closure->book);
 
@@ -2935,10 +2949,12 @@ done:
 static void
 e_book_backend_tp_create_contacts (EBookBackend *backend, EDataBook *book,
                                    guint32 opid, GCancellable *cancellable,
-                                   const GSList *vcards)
+                                   const gchar * const *vcards, guint32 opflags)
 {
+  // XXX: opflags?
   CreateContactsClosure *closure;
-  const GSList *vcard;
+
+  guint vcard_len = g_strv_length((gchar**) vcards);
 
   closure = g_new0 (CreateContactsClosure, 1);
 
@@ -2946,10 +2962,11 @@ e_book_backend_tp_create_contacts (EBookBackend *backend, EDataBook *book,
   closure->book = g_object_ref (book);
   closure->opid = opid;
 
-  for (vcard = vcards; vcard; vcard = vcard->next)
+  for (int idx = 0; idx < vcard_len; idx++)
   {
+    const char* vcard = vcards[idx];
     closure->econtacts = g_slist_prepend (
-          closure->econtacts, e_contact_new_from_vcard (vcard->data));
+          closure->econtacts, e_contact_new_from_vcard (vcard));
   }
 
   g_idle_add (create_contacts_idle_cb, closure);
@@ -3094,7 +3111,8 @@ remove_contacts_idle_cb (gpointer userdata)
   RemoveMembersClosure *closure = userdata;
   EBookBackendTp *backend = E_BOOK_BACKEND_TP (closure->backend);
   EBookBackendTpPrivate *priv = GET_PRIVATE (backend);
-  EDataBookStatus status;
+  EBookClientError status;
+  gboolean status_ok = TRUE;
   EBookBackendTpContact *contact = NULL;
   EBookBackendTpClStatus tpcl_status;
   GArray *contacts_to_update = NULL;
@@ -3106,26 +3124,28 @@ remove_contacts_idle_cb (gpointer userdata)
   {
     g_critical ("the book was not loaded correctly so the contacts cannot "
                 "be removed");
-    status = E_DATA_BOOK_STATUS_NOT_OPENED;
+    status = E_CLIENT_ERROR_NOT_OPENED;
+    status_ok = FALSE;
     goto done;
   }
 
   if (!priv->tpdb)
   {
-    status = E_DATA_BOOK_STATUS_BOOK_REMOVED;
+    status = E_BOOK_CLIENT_ERROR_NO_SUCH_BOOK;
+    status_ok = FALSE;
     goto done;
   }
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = E_DATA_BOOK_STATUS_NO_SPACE;
+    status = E_BOOK_CLIENT_ERROR_NO_SPACE;
+    status_ok = FALSE;
     goto done;
   }
 
   notify_remotely_updated_contacts_and_complete (backend);
   flush_db_updates (backend);
 
-  status = E_DATA_BOOK_STATUS_SUCCESS;
   tpcl_status = e_book_backend_tp_cl_get_status (priv->tpcl);
 
   /* Removing contacts is really easy. We basically just want to zero the
@@ -3150,9 +3170,13 @@ remove_contacts_idle_cb (gpointer userdata)
   }
 
 done:
-  e_data_book_respond_remove_contacts (closure->book, closure->opid,
-                                       e_data_book_create_error(status, NULL),
-                                       ids_removed);
+  if (status_ok)
+    e_data_book_respond_remove_contacts (closure->book, closure->opid,
+                                         NULL, ids_removed);
+  else
+    e_data_book_respond_remove_contacts (closure->book, closure->opid,
+                                         e_client_error_create(status, NULL),
+                                         ids_removed);
 
   /* Now update the database */
   if (contacts_to_update)
@@ -3180,18 +3204,19 @@ done:
 static void
 e_book_backend_tp_remove_contacts (EBookBackend *backend, EDataBook *book,
                                    guint32 opid, GCancellable *cancellable,
-                                   const GSList *id_list)
+                                   const gchar * const *uids, guint32 opflags)
 {
+  // XXX: opflags?
   RemoveMembersClosure *closure = NULL;
-  const GSList *l = NULL;
+  guint uids_len = g_strv_length((gchar**) uids);
 
   closure = g_new0 (RemoveMembersClosure, 1);
   closure->backend = g_object_ref (backend);
   closure->book = g_object_ref (book);
   closure->opid = opid;
 
-  for (l = id_list; l; l = l->next)
-    closure->id_list = g_list_append (closure->id_list, g_strdup (l->data));
+  for (int idx = 0; idx < uids_len; idx++)
+    closure->id_list = g_list_append (closure->id_list, g_strdup (uids[idx]));
 
   g_idle_add (remove_contacts_idle_cb, closure);
 }
@@ -3209,9 +3234,10 @@ get_contact_idle_cb (gpointer userdata)
 {
   GetContactClosure *closure = userdata;
   EBookBackendTpPrivate *priv = GET_PRIVATE (closure->backend);
-  EDataBookStatus status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+  EBookClientError status = E_CLIENT_ERROR_INVALID_ARG;
+  gboolean status_ok = FALSE;
   EBookBackendTpContact *contact;
-  EContact *ec;
+  EContact *ec = NULL;
   gchar *vcard = NULL;
 
   notify_remotely_updated_contacts_and_complete (closure->backend);
@@ -3226,29 +3252,28 @@ get_contact_idle_cb (gpointer userdata)
 
   if (!contact)
   {
-    status = E_DATA_BOOK_STATUS_CONTACT_NOT_FOUND;
+    status = E_BOOK_CLIENT_ERROR_CONTACT_NOT_FOUND;
     goto done;
   }
 
   ec = e_book_backend_tp_contact_to_econtact (contact, priv->vcard_field,
       priv->protocol_name);
   vcard = e_vcard_to_string (E_VCARD (ec), EVC_FORMAT_VCARD_30);
-  g_object_unref (ec);
 
-  if (vcard == NULL || vcard[0] == '\0')
-  {
-    WARNING ("Could not generate vcard from record.");
-    g_free (vcard);
-    vcard = NULL;
-    goto done;
-  }
-
-  status = E_DATA_BOOK_STATUS_SUCCESS;
+  status_ok = TRUE;
 
 done:
-  e_data_book_respond_get_contact (closure->book, closure->opid,
-                                   e_data_book_create_error(status, NULL),
-                                   vcard);
+  if (status_ok)
+    e_data_book_respond_get_contact (closure->book, closure->opid,
+                                     NULL, ec);
+  else
+    e_data_book_respond_get_contact (closure->book, closure->opid,
+                                     e_client_error_create(status, NULL),
+                                     ec);
+  if (ec)
+  {
+    g_object_unref (ec);
+  }
 
   g_free (vcard);
   g_object_unref (closure->backend);
@@ -3261,8 +3286,8 @@ done:
 
 static void
 e_book_backend_tp_get_contact (EBookBackend *backend, EDataBook *book,
-			       guint32 opid, GCancellable *cancellable,
-			       const gchar *id)
+                               guint32 opid, GCancellable *cancellable,
+                               const gchar *id)
 {
   GetContactClosure *closure = NULL;
 
@@ -3288,7 +3313,8 @@ get_contact_list_idle_cb (gpointer userdata)
 {
   GetContactListClosure *closure = userdata;
   EBookBackendTpPrivate *priv = GET_PRIVATE (closure->backend);
-  EDataBookStatus status = E_DATA_BOOK_STATUS_OTHER_ERROR;
+  EBookClientError status = E_CLIENT_ERROR_INVALID_ARG;
+  gboolean status_ok = FALSE;
   EBookBackendSExp *sexp = NULL;
   gboolean get_all = FALSE;
   GHashTableIter iter;
@@ -3337,12 +3363,16 @@ get_contact_list_idle_cb (gpointer userdata)
       contact_list = g_slist_prepend (contact_list, vcard);
   }
 
-  status = E_DATA_BOOK_STATUS_SUCCESS;
+  status_ok = TRUE;
 
 done:
-  e_data_book_respond_get_contact_list (closure->book, closure->opid,
-                                        e_data_book_create_error(status, NULL),
-                                        contact_list);
+  if (status_ok)
+    e_data_book_respond_get_contact_list (closure->book, closure->opid,
+                                          NULL, contact_list);
+  else
+    e_data_book_respond_get_contact_list (closure->book, closure->opid,
+                                          e_client_error_create(status, NULL),
+                                          contact_list);
 
   /* elements are released by libedata-book */
   g_slist_free (contact_list);
@@ -3360,8 +3390,8 @@ done:
 
 static void
 e_book_backend_tp_get_contact_list (EBookBackend *backend, EDataBook *book,
-				    guint32 opid, GCancellable *cancellable,
-				    const gchar *query)
+                                    guint32 opid, GCancellable *cancellable,
+                                    const gchar *query)
 {
   GetContactListClosure *closure = NULL;
 
@@ -3403,23 +3433,25 @@ e_book_backend_tp_class_init (EBookBackendTpClass *klass)
 {
   GObjectClass *object_class = NULL;
   EBookBackendClass *backend_class = NULL;
+  EBookBackendSyncClass *sync_class = NULL;
 
   object_class = G_OBJECT_CLASS (klass);
   backend_class = E_BOOK_BACKEND_CLASS (klass);
+  sync_class = E_BOOK_BACKEND_SYNC_CLASS(klass);
 
   object_class->dispose = e_book_backend_tp_dispose;
   object_class->finalize = e_book_backend_tp_finalize;
 
-  backend_class->open_sync = e_book_backend_tp_open_sync;
-  backend_class->get_backend_property = e_book_backend_tp_get_backend_property;
-  backend_class->start_view = e_book_backend_tp_start_view;
-  backend_class->stop_view = e_book_backend_tp_stop_view;
+  sync_class->open_sync = e_book_backend_tp_open_sync;
+  backend_class->impl_get_backend_property = e_book_backend_tp_get_backend_property;
+  backend_class->impl_start_view = e_book_backend_tp_start_view;
+  backend_class->impl_stop_view = e_book_backend_tp_stop_view;
 
-  backend_class->modify_contacts = e_book_backend_tp_modify_contacts;
-  backend_class->create_contacts = e_book_backend_tp_create_contacts;
-  backend_class->remove_contacts = e_book_backend_tp_remove_contacts;
-  backend_class->get_contact = e_book_backend_tp_get_contact;
-  backend_class->get_contact_list = e_book_backend_tp_get_contact_list;
+  backend_class->impl_modify_contacts = e_book_backend_tp_modify_contacts;
+  backend_class->impl_create_contacts = e_book_backend_tp_create_contacts;
+  backend_class->impl_remove_contacts = e_book_backend_tp_remove_contacts;
+  backend_class->impl_get_contact = e_book_backend_tp_get_contact;
+  backend_class->impl_get_contact_list = e_book_backend_tp_get_contact_list;
 
   /* There should be exactly one async OR sync implementation of each function,
    * so we don't create stubs for the sync functions here. */
