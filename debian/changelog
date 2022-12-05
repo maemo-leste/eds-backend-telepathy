@@ -1,3 +1,9 @@
+eds-backend-telepathy (0.4.66) unstable; urgency=low
+
+  * Finish port to newer libebook and libedata-book API
+
+ -- Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>  Mon, 05 Dec 2022 07:43:31 +0200
+
 eds-backend-telepathy (0.4.65) unstable; urgency=low
 
   * Port to newer libebook and libedata-book API
