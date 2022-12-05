@@ -2668,7 +2668,6 @@ done:
   }
   else
   {
-    g_object_unref (closure->contact);
     e_data_book_respond_modify_contacts (closure->book, closure->opid, error,
                                          NULL);
   }
