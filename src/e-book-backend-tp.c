@@ -44,9 +44,12 @@
 #include "e-book-backend-tp-log.h"
 
 #define EC_ERROR(_code) \
-  (e_client_error_create(E_CLIENT_ERROR_ ## _code, NULL))
+  (e_client_error_create (E_CLIENT_ERROR_ ## _code, NULL))
 #define EC_ERROR_EX(_code, _msg) \
-  (e_client_error_create(E_CLIENT_ERROR_ ## _code, _msg))
+  (e_client_error_create (E_CLIENT_ERROR_ ## _code, _msg))
+
+#define EBC_ERROR(_code) \
+  (e_book_client_error_create (E_BOOK_CLIENT_ERROR_ ## _code, NULL))
 
 #define GET_PRIVATE(o) \
   ((EBookBackendTpPrivate *) e_book_backend_tp_get_instance_private (E_BOOK_BACKEND_TP (o)))
@@ -2545,17 +2548,14 @@ modify_contact_idle_cb (gpointer userdata)
   const gchar *uid = NULL;
   EBookBackendTpContact *contact = NULL;
   EBookBackendTpClStatus tpcl_status;
-  GError *error = NULL;
   EContact *updated_econtact;
-  EBookClientError status;
-  gboolean status_ok = TRUE;
+  GError *error = NULL;
 
   if (priv->load_error)
   {
     g_critical ("the book was not loaded correctly so the contact cannot "
         "be modified");
-    status = E_CLIENT_ERROR_INVALID_ARG;
-    status_ok = FALSE;
+    error = EC_ERROR (INVALID_ARG);
     goto done;
   }
 
@@ -2563,15 +2563,13 @@ modify_contact_idle_cb (gpointer userdata)
 
   if (!priv->tpdb)
   {
-    status = E_BOOK_CLIENT_ERROR_NO_SUCH_BOOK;
-    status_ok = FALSE;
+    error = EBC_ERROR (NO_SUCH_BOOK) ;
     goto done;
   }
 
   if (!e_book_backend_tp_db_check_available_disk_space ())
   {
-    status = E_BOOK_CLIENT_ERROR_NO_SPACE;
-    status_ok = FALSE;
+    error = EBC_ERROR (NO_SPACE);
     goto done;
   }
 
@@ -2597,24 +2595,28 @@ modify_contact_idle_cb (gpointer userdata)
       e_book_backend_tp_contact_update_from_econtact (contact,
           closure->contact, priv->vcard_field);
 
-      DEBUG ("pending flags: %x %x", contact->pending_flags, SCHEDULE_UPDATE_MASTER_UID);
+      DEBUG ("pending flags: %x %x", contact->pending_flags,
+             SCHEDULE_UPDATE_MASTER_UID);
 
       if (contact->pending_flags & SCHEDULE_UPDATE_FLAGS
           || contact->pending_flags & SCHEDULE_UNBLOCK
           || contact->pending_flags & SCHEDULE_UPDATE_MASTER_UID
           || contact->pending_flags & SCHEDULE_UPDATE_VARIANTS)
       {
+        GError *update_error = NULL;
+
         tpcl_status = e_book_backend_tp_cl_get_status (priv->tpcl);
 
-        if ( tpcl_status == E_BOOK_BACKEND_TP_CL_ONLINE)
+        if (tpcl_status == E_BOOK_BACKEND_TP_CL_ONLINE)
         {
           if (contact->pending_flags & SCHEDULE_UPDATE_FLAGS)
           {
-            if (!e_book_backend_tp_cl_run_update_flags (priv->tpcl, contact, &error))
+            if (!e_book_backend_tp_cl_run_update_flags (priv->tpcl, contact,
+                                                        &update_error))
             {
               WARNING ("Error whilst trying to update flags: %s",
-                  error ? error->message : "unknown error");
-              g_clear_error (&error);
+                  update_error ? update_error->message : "unknown error");
+              g_clear_error (&update_error);
             } else {
               contact->pending_flags &= ~SCHEDULE_UPDATE_FLAGS;
             }
@@ -2625,11 +2627,12 @@ modify_contact_idle_cb (gpointer userdata)
             g_strdup (contact->uid),
             e_book_backend_tp_contact_ref (contact));
 
-        if (!e_book_backend_tp_db_update_contact (priv->tpdb, contact, &error))
+        if (!e_book_backend_tp_db_update_contact (priv->tpdb, contact,
+                                                  &update_error))
         {
           WARNING ("Error whilst updating database contact: %s",
-              error ? error->message : "unknown error");
-          g_clear_error (&error);
+              update_error ? update_error->message : "unknown error");
+          g_clear_error (&update_error);
         }
         else
         {
@@ -2643,17 +2646,15 @@ modify_contact_idle_cb (gpointer userdata)
     else
     {
       WARNING ("Unknown uid (%s) on submitted vcard", uid);
-      status = E_CLIENT_ERROR_INVALID_ARG;
-      status_ok = FALSE;
+      error = EC_ERROR (INVALID_ARG);
     }
   } else {
     WARNING ("No uid found on submitted vcard");
-    status = E_CLIENT_ERROR_INVALID_ARG;
-    status_ok = FALSE;
+    error = EC_ERROR (INVALID_ARG);;
   }
 
 done:
-  if (status_ok)
+  if (error == NULL)
   {
     GSList modified_contacts;
 
@@ -2668,8 +2669,8 @@ done:
   else
   {
     g_object_unref (closure->contact);
-    e_data_book_respond_modify_contacts (closure->book, closure->opid,
-                                 e_client_error_create(status, NULL), NULL);
+    e_data_book_respond_modify_contacts (closure->book, closure->opid, error,
+                                         NULL);
   }
 
   g_object_unref (closure->contact);
