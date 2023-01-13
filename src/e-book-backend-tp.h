@@ -39,12 +39,12 @@ extern DBusGConnection *e_book_backend_tp_system_bus_connection;
 typedef struct _EBookBackendTpPrivate EBookBackendTpPrivate;
 
 typedef struct {
-  EBookBackend parent;
+  EBookBackendSync parent;
   EBookBackendTpPrivate *priv;
 } EBookBackendTp;
 
 typedef struct {
-  EBookBackendClass parent_class;
+  EBookBackendSyncClass parent_class;
   void (*ready) (EBookBackendTp *backend);
   void (*members_ready) (EBookBackendTp *backend);
 } EBookBackendTpClass;

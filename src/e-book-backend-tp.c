@@ -100,7 +100,7 @@ struct _EBookBackendTpPrivate {
 
 G_DEFINE_TYPE_WITH_PRIVATE (EBookBackendTp,
                             e_book_backend_tp,
-                            E_TYPE_BOOK_BACKEND);
+                            E_TYPE_BOOK_BACKEND_SYNC);
 
 enum
 {
