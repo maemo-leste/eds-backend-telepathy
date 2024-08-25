@@ -1,3 +1,9 @@
+eds-backend-telepathy (0.4.68) unstable; urgency=low
+
+  * e-book-backend-tp-cl: Fix contact capabilities processing
+
+ -- Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>  Sun, 26 Aug 2024 22:04:32 +0300
+
 eds-backend-telepathy (0.4.67) unstable; urgency=low
 
   * Finish port to newer libebook and libedata-book API, for real
