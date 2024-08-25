@@ -1841,34 +1841,36 @@ get_contact_capabilities(GHashTable *caps)
 
       if (!g_strcmp0(channel_type, TP_IFACE_CHANNEL_TYPE_STREAMED_MEDIA))
       {
-        if (tp_asv_get_boolean(
-              fixed, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_AUDIO, NULL))
+        const gchar *const *p;
+
+        for (p = allowed; *p; p++)
         {
-          cap->capabilities |= CAP_VOICE;
-        }
-        if (tp_asv_get_boolean(
-              fixed, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_VIDEO, NULL))
-        {
-          cap->capabilities |= CAP_VIDEO;
-        }
-        if (tp_asv_get_boolean(
-              fixed,
-              TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_IMMUTABLE_STREAMS, NULL))
-        {
-          cap->capabilities |= CAP_IMMUTABLE_STREAMS;
+          if (!g_strcmp0(*p, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_AUDIO))
+          {
+            cap->capabilities |= CAP_VOICE;
+          }
+          else if (!g_strcmp0(
+                     *p, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_INITIAL_VIDEO))
+          {
+            cap->capabilities |= CAP_VIDEO;
+          }
+          else if (!g_strcmp0(
+                     *p, TP_PROP_CHANNEL_TYPE_STREAMED_MEDIA_IMMUTABLE_STREAMS))
+          {
+            cap->capabilities |= CAP_IMMUTABLE_STREAMS;
+          }
         }
       }
       else if (!g_strcmp0 (channel_type, TP_IFACE_CHANNEL_TYPE_CALL))
       {
-        if (tp_asv_get_boolean(
-              fixed, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_AUDIO, NULL))
+        const gchar *const *p;
+
+        for (p = allowed; *p; p++)
         {
-          cap->capabilities |= CAP_VOICE;
-        }
-        if (tp_asv_get_boolean(
-              fixed, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_VIDEO, NULL))
-        {
-          cap->capabilities |= CAP_VIDEO;
+          if (!g_strcmp0(*p, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_AUDIO))
+            cap->capabilities |= CAP_VOICE;
+          else if (!g_strcmp0(*p, TP_PROP_CHANNEL_TYPE_CALL_INITIAL_VIDEO))
+            cap->capabilities |= CAP_VIDEO;
         }
       }
       else if (!g_strcmp0 (channel_type, TP_IFACE_CHANNEL_TYPE_TEXT))
