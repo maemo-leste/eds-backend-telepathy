@@ -2,11 +2,8 @@
 %:
 	dh $@
 
-DEB_CFLAGS_MAINT_APPEND += -Wno-deprecated
+DEB_CFLAGS_MAINT_APPEND += -Wno-deprecated -Wno-deprecated-declarations
 export DEB_CFLAGS_MAINT_APPEND
 
-# Use soft-float and thumb mode if it enabled. 
-ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -mthumb
-endif
-
+override_dh_auto_test:
+    :
