@@ -13,15 +13,3 @@ Depends: ${shlibs:Depends}, evolution-data-server
 Description: Telepathy backend for Evolution Data Server
  This package provides a backend for Evolution Data Server than allows access
  to the Telepathy roster.
-
-Package: evolution-data-server-addressbook-backend-telepathy-dbg
-Section: devel
-Architecture: any
-Priority: extra
-Depends: ${shlibs:Depends}, evolution-data-server-addressbook-backend-telepathy (= ${source:Version})
-Description: Telepathy backend for Evolution Data Server
- This package provides a backend for Evolution Data Server than allows access
- to the Telepathy roster.
- .
- This package contains the debugging symbols.
-

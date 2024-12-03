@@ -1,16 +1,12 @@
 #!/usr/bin/make -f
+%:
+	dh $@
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/gnome.mk
-include /usr/share/cdbs/1/class/autotools-files.mk
+DEB_CFLAGS_MAINT_APPEND += -Wno-deprecated
+export DEB_CFLAGS_MAINT_APPEND
 
 # Use soft-float and thumb mode if it enabled. 
 ifneq (,$(findstring thumb,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -mthumb
 endif
-
-CFLAGS += -Wno-deprecated
-
-DEB_DH_STRIP_ARGS :=--dbg-package=evolution-data-server-addressbook-backend-telepathy-dbg
-DEB_CONFIGURE_SCRIPT := ./autogen.sh
 
