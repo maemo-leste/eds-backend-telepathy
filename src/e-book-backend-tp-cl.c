@@ -888,7 +888,7 @@ tp_channel_ready_cb (GObject *object, GAsyncResult *res, gpointer user_data)
   {
     WARNING ("error when getting channel %s ready: %s",
              contact_list_id_to_string (list_id), error->message);
-    g_clear_error (error);
+    g_clear_error (&error);
   }
   else if (verify_is_connected (tpcl, NULL))
   {
